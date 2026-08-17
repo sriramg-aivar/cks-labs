@@ -1,3 +1,6 @@
+# cks-labs
+Practise Platform
+
 # 🔐 CKS Practice Labs
 
 Practice all **16 CKS (Certified Kubernetes Security Specialist) exam scenarios** locally on your machine using a `kind` cluster with **Calico CNI** (real NetworkPolicy enforcement).
