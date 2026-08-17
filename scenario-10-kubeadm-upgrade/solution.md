@@ -2,7 +2,7 @@
 
 **Step 1: Drain the worker node**
 ```bash
-kubectl drain cks-lab-worker --ignore-daemonsets --delete-emptydir-data
+kubectl drain node01 --ignore-daemonsets --delete-emptydir-data
 ```
 
 **Step 2: Commands file** (`/tmp/upgrade-commands.txt`):
@@ -17,14 +17,14 @@ systemctl restart kubelet
 
 **Step 3: Uncordon**
 ```bash
-kubectl uncordon cks-lab-worker
+kubectl uncordon node01
 ```
 
 Key exam tips:
-- Worker nodes use `kubeadm upgrade node` (NOT `kubeadm upgrade apply` — that's for control-plane only)
-- Always upgrade kubeadm FIRST, then run the upgrade, then upgrade kubelet+kubectl
+- Worker nodes use `kubeadm upgrade node` (NOT `kubeadm upgrade apply`)
+- Always upgrade kubeadm FIRST, then run the upgrade, then kubelet+kubectl
 - Drain before upgrade, uncordon after
-- `--ignore-daemonsets` is almost always needed (DaemonSets can't be evicted)
+- `--ignore-daemonsets` is almost always needed
 - `--delete-emptydir-data` if pods use emptyDir volumes
-- The version format for apt is `1.31.0-1.1` (not just `1.31.0`)
-- Control-plane upgrade sequence: kubeadm upgrade plan → kubeadm upgrade apply v1.31.0
+- The version format for apt is `1.31.0-1.1`
+- On the real exam: ssh to the worker node to run these commands

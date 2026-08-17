@@ -1,12 +1,11 @@
 # Solution: Scenario 15
 
-1. Fix `defaultAllow: true` → `defaultAllow: false` in `admission-config.yaml`, then re-copy
-   it to the node:
-```bash
-docker cp admission-config.yaml cks-lab-control-plane:/etc/kubernetes/imagepolicy/admission-config.yaml
+1. Fix `defaultAllow: true` → `defaultAllow: false` in `/etc/kubernetes/imagepolicy/admission-config.yaml`:
+```yaml
+defaultAllow: false
 ```
 
-2. On the control-plane node, edit `/etc/kubernetes/manifests/kube-apiserver.yaml`:
+2. Edit `/etc/kubernetes/manifests/kube-apiserver.yaml`:
 ```
 - --enable-admission-plugins=NodeRestriction,ImagePolicyWebhook   # add to existing list
 - --admission-control-config-file=/etc/kubernetes/imagepolicy/admission-config.yaml

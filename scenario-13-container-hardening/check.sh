@@ -5,7 +5,7 @@ echo "Checking container hardening configuration..."
 FAILED=0
 
 # Check daemon.json
-CONFIG=$(docker exec cks-lab-control-plane cat /opt/docker/daemon.json 2>/dev/null)
+CONFIG=$(cat /opt/docker/daemon.json 2>/dev/null || echo "")
 
 if echo "$CONFIG" | grep -q '"icc".*false'; then
   echo "✓ icc disabled"
@@ -36,7 +36,7 @@ else
 fi
 
 # Check fix-permissions.sh
-FIX=$(docker exec cks-lab-control-plane cat /opt/docker/fix-permissions.sh 2>/dev/null)
+FIX=$(cat /opt/docker/fix-permissions.sh 2>/dev/null || echo "")
 
 if echo "$FIX" | grep -q 'chown root:root'; then
   echo "✓ fix-permissions.sh sets correct ownership"
@@ -45,7 +45,7 @@ else
   FAILED=1
 fi
 
-if echo "$FIX" | grep -q 'chmod 660\|chmod 0660'; then
+if echo "$FIX" | grep -qE 'chmod 660|chmod 0660'; then
   echo "✓ fix-permissions.sh sets correct mode"
 else
   echo "✗ fix-permissions.sh should chmod 660 the socket"

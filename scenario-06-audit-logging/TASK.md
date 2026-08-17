@@ -1,9 +1,9 @@
 # Scenario 6: Audit logging
 
-Reconfigure the API server on the control-plane node to:
-- Use an audit policy file (a basic one is provided at `audit-policy.yaml` — copy it into
-  the node)
-- Enable log-based audit backend with log retention: max 2 old log files kept
+Reconfigure the API server on the controlplane node to:
+- Use the audit policy file at `/etc/kubernetes/audit-policy.yaml` (already created)
+- Enable log-based audit backend writing to `/var/log/kubernetes/audit/audit.log`
+- Set max backup (old log files kept) to 2
 
-You'll need to edit `/etc/kubernetes/manifests/kube-apiserver.yaml` on
-`cks-lab-control-plane` to add the relevant `--audit-*` flags and hostPath volume mounts.
+Edit `/etc/kubernetes/manifests/kube-apiserver.yaml` to add the relevant `--audit-*`
+flags and hostPath volume mounts.

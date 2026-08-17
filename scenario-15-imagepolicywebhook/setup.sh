@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cat > admission-config.yaml << 'YAML'
+mkdir -p /etc/kubernetes/imagepolicy
+
+# Admission config (deliberately wrong: defaultAllow: true = fail-open)
+cat > /etc/kubernetes/imagepolicy/admission-config.yaml <<'YAML'
 apiVersion: apiserver.config.k8s.io/v1
 kind: AdmissionConfiguration
 plugins:
@@ -15,7 +18,8 @@ plugins:
         defaultAllow: true
 YAML
 
-cat > webhook-kubeconfig.yaml << 'YAML'
+# Webhook kubeconfig
+cat > /etc/kubernetes/imagepolicy/kubeconfig.yaml <<'YAML'
 apiVersion: v1
 kind: Config
 clusters:
@@ -32,9 +36,8 @@ contexts:
     name: image-checker
 YAML
 
-docker exec cks-lab-control-plane mkdir -p /etc/kubernetes/imagepolicy
-docker cp admission-config.yaml cks-lab-control-plane:/etc/kubernetes/imagepolicy/admission-config.yaml
-docker cp webhook-kubeconfig.yaml cks-lab-control-plane:/etc/kubernetes/imagepolicy/kubeconfig.yaml
-
-echo "Files copied to /etc/kubernetes/imagepolicy/ on control-plane node (defaultAllow: true — WRONG, fail-open)."
-echo "Fix admission-config.yaml's defaultAllow and wire kube-apiserver.yaml to use it."
+echo "Files created at /etc/kubernetes/imagepolicy/"
+echo "  admission-config.yaml  (defaultAllow: true — WRONG, this is fail-open!)"
+echo "  kubeconfig.yaml"
+echo ""
+echo "Fix admission-config.yaml and wire kube-apiserver.yaml to use ImagePolicyWebhook."

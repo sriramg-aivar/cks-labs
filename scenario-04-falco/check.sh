@@ -5,7 +5,7 @@ echo "Checking Falco configuration..."
 FAILED=0
 
 # Check rules file
-RULES=$(docker exec cks-lab-control-plane cat /opt/falco/rules.d/custom-rules.yaml 2>/dev/null)
+RULES=$(cat /opt/falco/rules.d/custom-rules.yaml 2>/dev/null || echo "")
 if echo "$RULES" | grep -q 'Read sensitive file shadow'; then
   echo "✓ Rule name correct"
 else
@@ -35,7 +35,7 @@ else
 fi
 
 # Check falco.yaml
-CONFIG=$(docker exec cks-lab-control-plane cat /opt/falco/falco.yaml 2>/dev/null)
+CONFIG=$(cat /opt/falco/falco.yaml 2>/dev/null || echo "")
 if echo "$CONFIG" | grep -q 'json_output: true'; then
   echo "✓ JSON output enabled"
 else
