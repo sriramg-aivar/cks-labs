@@ -178,7 +178,23 @@ run_setup() {
     echo ""
     bash "$dir/setup.sh"
     echo ""
-    echo -e "${GREEN}Scenario is set up! Read the task [t] and start working.${NC}"
+    echo -e "${GREEN}✓ Scenario is set up!${NC}"
+    echo ""
+    # Immediately show the task so user can work on it
+    show_task
+    echo -e "  ${BOLD}${YELLOW}>>> Work in another terminal to solve this. <<<${NC}"
+    echo -e "  ${DIM}Use: kubectl, docker exec, etc. Come back here when done.${NC}"
+    echo ""
+    echo -e "  ${CYAN}[c]${NC} Check answer  ${CYAN}[s]${NC} Show solution  ${CYAN}[Enter]${NC} Back to menu"
+    echo ""
+    echo -ne "  ${BOLD}Choice: ${NC}"
+    read -r -n1 subchoice
+    echo ""
+    case "$subchoice" in
+      c|C) run_check ;;
+      s|S) show_solution ;;
+      *) return ;;
+    esac
   else
     echo -e "${RED}No setup.sh found for this scenario.${NC}"
   fi
@@ -288,14 +304,25 @@ main() {
     case "$choice" in
       t|T) show_task; echo -ne "  ${DIM}Press Enter to continue...${NC}"; read -r ;;
       s|S) show_solution; echo -ne "  ${DIM}Press Enter to continue...${NC}"; read -r ;;
-      r|R) run_setup; echo -ne "  ${DIM}Press Enter to continue...${NC}"; read -r ;;
+      r|R) run_setup ;;
       c|C) run_check; echo -ne "  ${DIM}Press Enter to continue...${NC}"; read -r ;;
       x|X) run_reset; echo -ne "  ${DIM}Press Enter to continue...${NC}"; read -r ;;
       d|D) mark_completed "$CURRENT"; next_scenario ;;
       n|N) next_scenario ;;
       p|P) prev_scenario ;;
       l|L) list_scenarios; echo -ne "  ${DIM}Press Enter to continue...${NC}"; read -r ;;
-      q|Q) echo -e "\n  ${DIM}Happy studying! 🔒${NC}"; echo ""; exit 0 ;;
+      q|Q)
+        # Cleanup current scenario before quitting
+        local dir="$SCRIPT_DIR/${SCENARIOS[$CURRENT]}"
+        if [ -f "$dir/cleanup.sh" ]; then
+          echo ""
+          echo -e "  ${YELLOW}Cleaning up current scenario...${NC}"
+          bash "$dir/cleanup.sh" 2>/dev/null || true
+        fi
+        echo -e "\n  ${DIM}Progress saved. Happy studying! 🔒${NC}"
+        echo ""
+        exit 0
+        ;;
       *) ;;
     esac
   done
