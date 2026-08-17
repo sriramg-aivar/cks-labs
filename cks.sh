@@ -58,26 +58,28 @@ SCENARIO_TITLES=(
 
 # Load/save progress
 load_progress() {
+  CURRENT=0
+  COMPLETED=()
   if [ -f "$PROGRESS_FILE" ]; then
     source "$PROGRESS_FILE"
-  else
-    CURRENT=0
-    declare -a COMPLETED=()
-  fi
-  # Ensure COMPLETED is an array
-  if [ -z "${COMPLETED+x}" ]; then
-    COMPLETED=()
   fi
 }
 
 save_progress() {
   echo "CURRENT=$CURRENT" > "$PROGRESS_FILE"
-  echo "COMPLETED=(${COMPLETED[*]:-})" >> "$PROGRESS_FILE"
+  if [ ${#COMPLETED[@]} -gt 0 ]; then
+    echo "COMPLETED=(${COMPLETED[*]})" >> "$PROGRESS_FILE"
+  else
+    echo "COMPLETED=()" >> "$PROGRESS_FILE"
+  fi
 }
 
 is_completed() {
   local num=$1
-  for c in "${COMPLETED[@]:-}"; do
+  if [ ${#COMPLETED[@]} -eq 0 ]; then
+    return 1
+  fi
+  for c in "${COMPLETED[@]}"; do
     [ "$c" = "$num" ] && return 0
   done
   return 1
