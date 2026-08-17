@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
 DIM='\033[2m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # All 16 scenarios in order
 SCENARIOS=(
@@ -56,7 +56,12 @@ SCENARIO_TITLES=(
   "API Server Auth"
 )
 
-# Load/save progress
+CURRENT=0
+COMPLETED=()
+SCENARIO_ACTIVE=false  # tracks if a scenario is currently set up
+
+# ─── Progress management ───────────────────────────────────────────
+
 load_progress() {
   CURRENT=0
   COMPLETED=()
@@ -66,12 +71,14 @@ load_progress() {
 }
 
 save_progress() {
-  echo "CURRENT=$CURRENT" > "$PROGRESS_FILE"
-  if [ ${#COMPLETED[@]} -gt 0 ]; then
-    echo "COMPLETED=(${COMPLETED[*]})" >> "$PROGRESS_FILE"
-  else
-    echo "COMPLETED=()" >> "$PROGRESS_FILE"
-  fi
+  {
+    echo "CURRENT=$CURRENT"
+    if [ ${#COMPLETED[@]} -gt 0 ]; then
+      echo "COMPLETED=(${COMPLETED[*]})"
+    else
+      echo "COMPLETED=()"
+    fi
+  } > "$PROGRESS_FILE"
 }
 
 is_completed() {
@@ -93,7 +100,14 @@ mark_completed() {
   fi
 }
 
-# Display functions
+reset_all_progress() {
+  CURRENT=0
+  COMPLETED=()
+  rm -f "$PROGRESS_FILE"
+}
+
+# ─── Display functions ─────────────────────────────────────────────
+
 clear_screen() {
   printf '\033[2J\033[H'
 }
@@ -101,35 +115,34 @@ clear_screen() {
 show_header() {
   local idx=$CURRENT
   local num=$((idx + 1))
-  local numstr=$(printf "%02d" $num)
-  
+  local numstr
+  numstr=$(printf "%02d" $num)
+
   echo -e "${BOLD}${CYAN}"
   echo "╔═══════════════════════════════════════════════════════════════╗"
   echo "║            CKS Practice Labs - Study Mode                     ║"
   echo "╚═══════════════════════════════════════════════════════════════╝"
   echo -e "${NC}"
-  
-  # Progress bar
+
+  # Progress
   local done=${#COMPLETED[@]}
-  local total=${#SCENARIOS[@]}
-  echo -e "  Progress: ${GREEN}${done}${NC}/${total} completed"
+  echo -e "  Progress: ${GREEN}${done}${NC}/16 completed"
   echo ""
-  
+
   # Current scenario
   if is_completed "$idx"; then
     echo -e "  ${GREEN}▶ Scenario ${numstr}/16: ${SCENARIO_TITLES[$idx]} ✓${NC}"
   else
     echo -e "  ${YELLOW}▶ Scenario ${numstr}/16: ${SCENARIO_TITLES[$idx]}${NC}"
   fi
-  echo -e "  ${DIM}Directory: ${SCENARIOS[$idx]}${NC}"
   echo ""
 }
 
 show_menu() {
   echo -e "  ${BOLD}Options:${NC}"
+  echo -e "    ${CYAN}[r]${NC} Run/Setup this scenario"
   echo -e "    ${CYAN}[t]${NC} Show Task (question)"
   echo -e "    ${CYAN}[s]${NC} Show Solution"
-  echo -e "    ${CYAN}[r]${NC} Run/Setup this scenario"
   echo -e "    ${CYAN}[c]${NC} Check my answer"
   echo -e "    ${CYAN}[x]${NC} Reset (cleanup) scenario"
   echo -e "    ${CYAN}[d]${NC} Mark done & next →"
@@ -148,7 +161,7 @@ show_task() {
     echo ""
     cat "$dir/TASK.md"
   else
-    echo -e "${RED}No TASK.md found for this scenario.${NC}"
+    echo -e "${RED}  No TASK.md found for this scenario.${NC}"
   fi
   echo ""
   echo -e "${BOLD}${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -163,93 +176,164 @@ show_solution() {
     echo ""
     cat "$dir/solution.md"
   else
-    echo -e "${RED}No solution.md found for this scenario.${NC}"
+    echo -e "${RED}  No solution.md found for this scenario.${NC}"
   fi
   echo ""
   echo -e "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo ""
 }
 
-run_setup() {
+# ─── Actions ───────────────────────────────────────────────────────
+
+do_setup() {
   local dir="$SCRIPT_DIR/${SCENARIOS[$CURRENT]}"
+  if [ ! -f "$dir/setup.sh" ]; then
+    echo -e "  ${RED}No setup.sh found for this scenario.${NC}"
+    wait_enter
+    return
+  fi
+
   echo ""
-  if [ -f "$dir/setup.sh" ]; then
-    echo -e "${YELLOW}Setting up scenario...${NC}"
+  echo -e "  ${YELLOW}Setting up scenario...${NC}"
+  echo ""
+  bash "$dir/setup.sh"
+  SCENARIO_ACTIVE=true
+  echo ""
+  echo -e "  ${GREEN}✓ Scenario is ready!${NC}"
+  echo ""
+
+  # Show task immediately
+  show_task
+
+  # Now enter a working loop — user stays here until they go back
+  while true; do
+    echo -e "  ${BOLD}${YELLOW}>>> Solve this in another terminal <<<${NC}"
     echo ""
-    bash "$dir/setup.sh"
-    echo ""
-    echo -e "${GREEN}✓ Scenario is set up!${NC}"
-    echo ""
-    # Immediately show the task so user can work on it
-    show_task
-    echo -e "  ${BOLD}${YELLOW}>>> Work in another terminal to solve this. <<<${NC}"
-    echo -e "  ${DIM}Use: kubectl, docker exec, etc. Come back here when done.${NC}"
-    echo ""
-    echo -e "  ${CYAN}[c]${NC} Check answer  ${CYAN}[s]${NC} Show solution  ${CYAN}[Enter]${NC} Back to menu"
+    echo -e "  ${CYAN}[t]${NC} Show task again  ${CYAN}[s]${NC} Solution  ${CYAN}[c]${NC} Check  ${CYAN}[b]${NC} Back to menu"
     echo ""
     echo -ne "  ${BOLD}Choice: ${NC}"
     read -r -n1 subchoice
     echo ""
+
     case "$subchoice" in
-      c|C) run_check ;;
+      t|T) show_task ;;
       s|S) show_solution ;;
-      *) return ;;
+      c|C) do_check_inline ;;
+      b|B|"") return ;;
+      *) ;;
     esac
-  else
-    echo -e "${RED}No setup.sh found for this scenario.${NC}"
-  fi
-  echo ""
+  done
 }
 
-run_check() {
+do_check_inline() {
   local dir="$SCRIPT_DIR/${SCENARIOS[$CURRENT]}"
   echo ""
   if [ -f "$dir/check.sh" ]; then
-    echo -e "${YELLOW}Checking your answer...${NC}"
+    echo -e "  ${YELLOW}Checking your answer...${NC}"
     echo ""
     if bash "$dir/check.sh"; then
       echo ""
-      echo -e "${GREEN}${BOLD}✓ All checks passed! Well done!${NC}"
-      echo -e "  Press ${CYAN}[d]${NC} to mark complete and move to next."
+      echo -e "  ${GREEN}${BOLD}✓ All checks passed! Well done!${NC}"
     else
       echo ""
-      echo -e "${RED}Some checks failed. Keep trying or view solution [s].${NC}"
+      echo -e "  ${RED}✗ Some checks failed. Keep trying or view solution [s].${NC}"
     fi
   else
-    echo -e "${DIM}No automated check for this scenario.${NC}"
-    echo -e "Compare your work against the solution ${CYAN}[s]${NC}"
+    echo -e "  ${DIM}No automated check. Compare with solution [s].${NC}"
   fi
   echo ""
 }
 
-run_reset() {
+do_check() {
+  local dir="$SCRIPT_DIR/${SCENARIOS[$CURRENT]}"
+  echo ""
+  if [ -f "$dir/check.sh" ]; then
+    echo -e "  ${YELLOW}Checking your answer...${NC}"
+    echo ""
+    if bash "$dir/check.sh"; then
+      echo ""
+      echo -e "  ${GREEN}${BOLD}✓ All checks passed!${NC}"
+    else
+      echo ""
+      echo -e "  ${RED}✗ Some checks failed. Keep trying or view solution [s].${NC}"
+    fi
+  else
+    echo -e "  ${DIM}No automated check. Compare with solution [s].${NC}"
+  fi
+  echo ""
+  wait_enter
+}
+
+do_reset() {
   local dir="$SCRIPT_DIR/${SCENARIOS[$CURRENT]}"
   echo ""
   if [ -f "$dir/cleanup.sh" ]; then
-    echo -e "${YELLOW}Resetting scenario...${NC}"
-    bash "$dir/cleanup.sh"
-    echo -e "${GREEN}Done. Scenario cleaned up.${NC}"
+    echo -e "  ${YELLOW}Cleaning up scenario...${NC}"
+    bash "$dir/cleanup.sh" 2>/dev/null || true
+    SCENARIO_ACTIVE=false
+    echo -e "  ${GREEN}✓ Scenario reset.${NC}"
   else
-    echo -e "${RED}No cleanup.sh found for this scenario.${NC}"
+    echo -e "  ${RED}No cleanup.sh found.${NC}"
   fi
   echo ""
+  wait_enter
+}
+
+do_quit() {
+  echo ""
+  # Cleanup active scenario
+  if [ "$SCENARIO_ACTIVE" = true ]; then
+    local dir="$SCRIPT_DIR/${SCENARIOS[$CURRENT]}"
+    if [ -f "$dir/cleanup.sh" ]; then
+      echo -e "  ${YELLOW}Cleaning up active scenario...${NC}"
+      bash "$dir/cleanup.sh" 2>/dev/null || true
+    fi
+  fi
+
+  echo ""
+  echo -e "  ${BOLD}Before quitting:${NC}"
+  echo -e "    ${CYAN}[s]${NC} Save progress and quit"
+  echo -e "    ${CYAN}[r]${NC} Reset ALL progress (start fresh next time) and quit"
+  echo -e "    ${CYAN}[c]${NC} Cancel (go back)"
+  echo ""
+  echo -ne "  ${BOLD}Choice: ${NC}"
+  read -r -n1 qchoice
+  echo ""
+
+  case "$qchoice" in
+    s|S)
+      save_progress
+      echo -e "\n  ${GREEN}Progress saved (${#COMPLETED[@]}/16 done). See you next time! 🔒${NC}\n"
+      exit 0
+      ;;
+    r|R)
+      reset_all_progress
+      echo -e "\n  ${YELLOW}All progress reset. Fresh start next time! 🔒${NC}\n"
+      exit 0
+      ;;
+    *)
+      # Cancel — go back to menu
+      return
+      ;;
+  esac
 }
 
 list_scenarios() {
   echo ""
-  echo -e "${BOLD}  All 16 CKS Scenarios:${NC}"
+  echo -e "  ${BOLD}All 16 CKS Scenarios:${NC}"
   echo ""
   for i in "${!SCENARIOS[@]}"; do
     local num=$((i + 1))
-    local numstr=$(printf "%02d" $num)
+    local numstr
+    numstr=$(printf "%02d" $num)
     local marker="  "
     local color="$NC"
-    
+
     if [ $i -eq $CURRENT ]; then
       marker="▶ "
       color="$YELLOW"
     fi
-    
+
     if is_completed "$i"; then
       echo -e "    ${GREEN}${marker}${numstr}. ${SCENARIO_TITLES[$i]} ✓${NC}"
     else
@@ -257,6 +341,7 @@ list_scenarios() {
     fi
   done
   echo ""
+  wait_enter
 }
 
 next_scenario() {
@@ -264,9 +349,8 @@ next_scenario() {
     CURRENT=$((CURRENT + 1))
     save_progress
   else
-    echo ""
-    echo -e "${GREEN}${BOLD}🎉 You've reached the last scenario! All 16 done!${NC}"
-    echo ""
+    echo -e "\n  ${GREEN}${BOLD}🎉 You're on the last scenario already!${NC}\n"
+    sleep 1
   fi
 }
 
@@ -274,55 +358,48 @@ prev_scenario() {
   if [ $CURRENT -gt 0 ]; then
     CURRENT=$((CURRENT - 1))
     save_progress
-  else
-    echo -e "${DIM}Already at the first scenario.${NC}"
   fi
 }
 
-# Main loop
+wait_enter() {
+  echo -ne "  ${DIM}Press Enter to continue...${NC}"
+  read -r
+}
+
+# ─── Main loop ─────────────────────────────────────────────────────
+
 main() {
   load_progress
-  
-  # Allow jumping to a specific scenario
-  if [ ${1:-} ] && [[ "$1" =~ ^[0-9]+$ ]]; then
+
+  # Allow jumping to a specific scenario via argument
+  if [ "${1:-}" ] && [[ "${1:-}" =~ ^[0-9]+$ ]]; then
     local target=$((10#$1 - 1))
     if [ $target -ge 0 ] && [ $target -le 15 ]; then
       CURRENT=$target
       save_progress
     fi
   fi
-  
+
   while true; do
     clear_screen
     show_header
     show_menu
-    
+
     echo -ne "  ${BOLD}Choice: ${NC}"
     read -r -n1 choice
     echo ""
-    
+
     case "$choice" in
-      t|T) show_task; echo -ne "  ${DIM}Press Enter to continue...${NC}"; read -r ;;
-      s|S) show_solution; echo -ne "  ${DIM}Press Enter to continue...${NC}"; read -r ;;
-      r|R) run_setup ;;
-      c|C) run_check; echo -ne "  ${DIM}Press Enter to continue...${NC}"; read -r ;;
-      x|X) run_reset; echo -ne "  ${DIM}Press Enter to continue...${NC}"; read -r ;;
+      r|R) do_setup ;;
+      t|T) show_task; wait_enter ;;
+      s|S) show_solution; wait_enter ;;
+      c|C) do_check ;;
+      x|X) do_reset ;;
       d|D) mark_completed "$CURRENT"; next_scenario ;;
       n|N) next_scenario ;;
       p|P) prev_scenario ;;
-      l|L) list_scenarios; echo -ne "  ${DIM}Press Enter to continue...${NC}"; read -r ;;
-      q|Q)
-        # Cleanup current scenario before quitting
-        local dir="$SCRIPT_DIR/${SCENARIOS[$CURRENT]}"
-        if [ -f "$dir/cleanup.sh" ]; then
-          echo ""
-          echo -e "  ${YELLOW}Cleaning up current scenario...${NC}"
-          bash "$dir/cleanup.sh" 2>/dev/null || true
-        fi
-        echo -e "\n  ${DIM}Progress saved. Happy studying! 🔒${NC}"
-        echo ""
-        exit 0
-        ;;
+      l|L) list_scenarios ;;
+      q|Q) do_quit ;;
       *) ;;
     esac
   done
