@@ -1,6 +1,6 @@
 # Solution: Scenario 4
 
-**Custom rule** (`/opt/falco/rules.d/custom-rules.yaml`):
+## Custom rule (`/opt/falco/rules.d/custom-rules.yaml`)
 ```yaml
 - rule: Read sensitive file shadow
   desc: Detect any process reading /etc/shadow
@@ -10,14 +10,24 @@
   tags: [filesystem, mitre_credential_access]
 ```
 
-**Enable JSON output** (`/opt/falco/falco.yaml`):
+## Enable JSON output (`/opt/falco/falco.yaml`)
+Change:
 ```yaml
 json_output: true
 ```
 
-Key exam tips:
-- Falco condition syntax: `open_read` = file opened for reading, `fd.name` = file descriptor name
+## Verify
+```bash
+grep 'Read sensitive file shadow' /opt/falco/rules.d/custom-rules.yaml
+grep 'open_read' /opt/falco/rules.d/custom-rules.yaml
+grep '/etc/shadow' /opt/falco/rules.d/custom-rules.yaml
+grep 'WARNING' /opt/falco/rules.d/custom-rules.yaml
+grep 'json_output: true' /opt/falco/falco.yaml
+```
+
+## Exam tips
+- Falco condition syntax: `open_read` = file opened for reading, `fd.name` = file descriptor path
 - Output fields: `%evt.time`, `%user.name`, `%proc.name`, `%container.id`, `%container.name`
 - Priority levels: EMERGENCY, ALERT, CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG
-- `json_output: true` makes Falco output machine-parseable (often asked in CKS)
 - Rules in `/etc/falco/rules.d/` override/extend the default ruleset
+- `json_output: true` makes output machine-parseable

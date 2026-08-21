@@ -1,6 +1,6 @@
 # Solution: Scenario 13
 
-**Fixed `/opt/docker/daemon.json`:**
+## Fix daemon.json (`/opt/docker/daemon.json`)
 ```json
 {
   "icc": false,
@@ -15,17 +15,25 @@
 }
 ```
 
-**Fix permissions script** (`/opt/docker/fix-permissions.sh`):
+## Fix permissions script (`/opt/docker/fix-permissions.sh`)
 ```bash
 #!/bin/bash
 chown root:root /var/run/docker.sock
 chmod 660 /var/run/docker.sock
 ```
 
-Key exam tips:
-- `icc: false` — prevents containers from communicating directly via bridge (defense in depth)
-- `userns-remap: default` — maps container root to unprivileged host user (user namespace isolation)
-- `no-new-privileges: true` — prevents processes from gaining additional privileges via setuid/setgid
-- `live-restore: true` — keeps containers running if daemon restarts
-- Docker socket should be `root:root` with `660` (or `root:docker` with `660` — but removing users from docker group is preferred)
-- Always `systemctl restart docker` after changing daemon.json
+## Verify
+```bash
+cat /opt/docker/daemon.json | python3 -m json.tool
+grep 'icc.*false' /opt/docker/daemon.json
+grep 'userns-remap' /opt/docker/daemon.json
+cat /opt/docker/fix-permissions.sh
+```
+
+## Exam tips
+- `icc: false` — prevents direct container-to-container communication on bridge
+- `userns-remap: "default"` — maps container root to unprivileged host UID
+- `no-new-privileges: true` — blocks setuid/setgid escalation
+- `live-restore: true` — containers keep running during daemon restart
+- Socket: `root:root` + `660` (only root/docker group can access)
+- After changes: `systemctl restart docker`

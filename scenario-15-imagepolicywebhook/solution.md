@@ -1,23 +1,48 @@
 # Solution: Scenario 15
 
-1. Fix `defaultAllow: true` → `defaultAllow: false` in `/etc/kubernetes/imagepolicy/admission-config.yaml`:
+## Fix admission config
+Edit `/etc/kubernetes/imagepolicy/admission-config.yaml`:
 ```yaml
 defaultAllow: false
 ```
 
-2. Edit `/etc/kubernetes/manifests/kube-apiserver.yaml`:
-```
-- --enable-admission-plugins=NodeRestriction,ImagePolicyWebhook   # add to existing list
+## Edit kube-apiserver.yaml
+Add to `/etc/kubernetes/manifests/kube-apiserver.yaml`:
+```yaml
+- --enable-admission-plugins=NodeRestriction,ImagePolicyWebhook
 - --admission-control-config-file=/etc/kubernetes/imagepolicy/admission-config.yaml
 ```
-Add a hostPath volume/volumeMount for `/etc/kubernetes/imagepolicy` if not already
-reachable (it is, in this setup, since it's on the node's real filesystem under
-`/etc/kubernetes` which is already mounted into the static pod).
 
-3. Save, wait for apiserver pod to restart:
-```bash
-kubectl get pods -n kube-system | grep apiserver
+If `/etc/kubernetes/imagepolicy` is not already accessible to the pod, add:
+```yaml
+volumeMounts:
+  - name: imagepolicy
+    mountPath: /etc/kubernetes/imagepolicy
+    readOnly: true
+volumes:
+  - name: imagepolicy
+    hostPath:
+      path: /etc/kubernetes/imagepolicy
+      type: DirectoryOrCreate
 ```
 
-`defaultAllow: false` is the key "fail closed" setting — if the webhook backend can't be
-reached, image admission is DENIED rather than allowed.
+## Verify
+```bash
+# Wait for apiserver to restart
+sleep 40
+kubectl get pods -n kube-system | grep apiserver
+
+# Check flags
+cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep ImagePolicyWebhook
+cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep admission-control-config
+
+# defaultAllow should be false
+grep defaultAllow /etc/kubernetes/imagepolicy/admission-config.yaml
+```
+
+## Exam tips
+- `defaultAllow: false` = fail CLOSED (deny if webhook unreachable)
+- `defaultAllow: true` = fail OPEN (allow if webhook unreachable) — WRONG for security
+- Don't forget to add the config file flag AND the admission plugin
+- If apiserver doesn't come back: check logs with `crictl logs`
+- Common mistake: trailing comma in admission-plugins list

@@ -1,5 +1,7 @@
 # Solution: Scenario 1
 
+## Fix kubelet
+
 Edit `/var/lib/kubelet/config.yaml`:
 ```yaml
 authentication:
@@ -8,19 +10,36 @@ authentication:
 authorization:
   mode: Webhook
 ```
-Then: `systemctl restart kubelet`
 
-Edit `/etc/kubernetes/manifests/etcd.yaml`, ensure:
+Restart kubelet:
+```bash
+systemctl restart kubelet
+```
+
+## Fix etcd
+
+Edit `/etc/kubernetes/manifests/etcd.yaml`, ensure this flag exists:
 ```
 --client-cert-auth=true
 ```
-Saving this file auto-restarts the etcd static pod.
+Saving auto-restarts the etcd static pod.
 
-Verify:
+## Verify
 ```bash
-ps -ef | grep kubelet
-kubectl get pods -n kube-system | grep etcd
+# Kubelet config
+cat /var/lib/kubelet/config.yaml | grep -A2 'anonymous:'
+cat /var/lib/kubelet/config.yaml | grep -A1 'authorization:'
+systemctl status kubelet | grep Active
+
+# etcd
+cat /etc/kubernetes/manifests/etcd.yaml | grep client-cert-auth
+
+# Cluster health
+kubectl get nodes
+kubectl get pods -n kube-system
 ```
 
-Note: the CKS exam uses kubeadm clusters — know both config file format
-(KubeletConfiguration YAML) and CLI flags.
+## Exam tips
+- Know both KubeletConfiguration YAML format and CLI flags
+- `systemctl restart kubelet` is mandatory after config changes
+- Static pod changes auto-restart (just save the file)

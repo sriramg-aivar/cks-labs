@@ -1,5 +1,6 @@
 # Solution: Scenario 7
 
+## NetworkPolicy YAML
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -18,18 +19,23 @@ spec:
             matchLabels:
               kubernetes.io/metadata.name: team-b
 ```
+Apply: `kubectl apply -f netpol.yaml`
 
-Apply with `kubectl apply -f -`. This both denies all ingress by default (empty rule set
-would deny everything; here we scope the one allowed `from`) and allows only team-b.
-
-Verify:
+## Verify
 ```bash
-kubectl -n team-b exec frontend -- wget -qO- --timeout=2 backend.team-a
-kubectl -n default run test --rm -it --image=busybox:1.36 -- wget -qO- --timeout=2 backend.team-a.svc.cluster.local
-```
-(second command should time out / fail)
+# Policy exists
+kubectl -n team-a get networkpolicy
 
-Note: kind's default CNI is `kindnet`, which does NOT enforce NetworkPolicies out of the
-box. Install Calico or Cilium on the cluster first if you want policies to actually be
-enforced — otherwise this scenario only tests whether you can *write* the correct YAML.
-See `cluster/README` note below.
+# Traffic from team-b WORKS
+kubectl -n team-b exec frontend -- wget -qO- --timeout=3 backend.team-a.svc.cluster.local
+
+# Traffic from other namespaces BLOCKED
+kubectl run test --rm -it --image=busybox:1.36 --restart=Never -- wget -qO- --timeout=3 backend.team-a.svc.cluster.local
+# ^ Should timeout
+```
+
+## Exam tips
+- `kubernetes.io/metadata.name` label is auto-set on all namespaces — use it for namespace selection
+- `policyTypes: [Ingress]` with a specific `from` rule = deny-all-except
+- An empty `ingress: []` would deny ALL ingress (no exceptions)
+- If no podSelector labels: policy applies to ALL pods in namespace

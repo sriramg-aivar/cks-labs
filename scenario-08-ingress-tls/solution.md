@@ -1,5 +1,6 @@
 # Solution: Scenario 8
 
+## Ingress YAML
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -11,7 +12,8 @@ metadata:
 spec:
   ingressClassName: nginx
   tls:
-    - hosts: ["web.example.com"]
+    - hosts:
+        - web.example.com
       secretName: web-tls
   rules:
     - host: web.example.com
@@ -25,9 +27,18 @@ spec:
                 port:
                   number: 80
 ```
+Apply: `kubectl apply -f ingress.yaml`
 
-Verify:
+## Verify
 ```bash
 kubectl -n web-ns get ingress
-curl -k -H "Host: web.example.com" https://localhost:443   # if controller NodePort/hostPort is mapped
+kubectl -n web-ns describe ingress web-ingress
+kubectl -n web-ns get ingress web-ingress -o yaml | grep -A3 tls
+kubectl -n web-ns get ingress web-ingress -o yaml | grep ssl-redirect
 ```
+
+## Exam tips
+- `ingressClassName: nginx` is required (not the old annotation)
+- TLS secret must be in the SAME namespace as the Ingress
+- `pathType` is required: use `Prefix` or `Exact`
+- The host in `tls.hosts` must match the rule host

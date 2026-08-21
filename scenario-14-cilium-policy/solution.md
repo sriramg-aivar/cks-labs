@@ -1,5 +1,6 @@
 # Solution: Scenario 14
 
+## CiliumNetworkPolicy YAML
 ```yaml
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -18,19 +19,20 @@ spec:
         mode: "required"
     - fromEntities:
         - host
-      # no `authentication` block = no mutual auth required for host traffic
+```
+Apply: `kubectl apply -f cnp.yaml`
+
+## Verify
+```bash
+kubectl -n svc-ns get ciliumnetworkpolicy
+kubectl -n svc-ns get ciliumnetworkpolicy secure-svc-policy -o yaml | grep -A1 authentication
+kubectl -n svc-ns get ciliumnetworkpolicy secure-svc-policy -o yaml | grep -A1 fromEntities
 ```
 
-Apply with: `kubectl apply -f cnp.yaml`
-
-Key ideas to remember for the exam:
-- `authentication.mode: required` on an ingress rule is how Cilium expresses "mutual auth
-  required" (needs Cilium's mutual-auth feature / SPIRE enabled on the cluster).
-- `fromEntities: [host]` is the special selector for "the node itself", and omitting the
-  `authentication` block on that rule means no mTLS is enforced for it.
-- CiliumNetworkPolicy is namespaced (like NetworkPolicy) — apply it in the same namespace
-  as the workload.
-
-Note: On the CKS exam, Cilium is the CNI and CiliumNetworkPolicy is fully enforced.
-In this lab, only the CRD is installed (for YAML validation). The policy structure
-and syntax is exactly what the exam tests.
+## Exam tips
+- `authentication.mode: "required"` = mutual TLS required for that rule
+- `fromEntities: [host]` = allow from the node itself (no mTLS)
+- Omitting `authentication` block = no mTLS requirement
+- CiliumNetworkPolicy is namespaced — same namespace as workload
+- `k8s:io.kubernetes.pod.namespace` is how Cilium selects by namespace
+- On CKS exam: Cilium is the CNI, CiliumNetworkPolicy is fully enforced
