@@ -193,6 +193,33 @@ do_setup() {
     return
   fi
 
+  # Health check: can we reach the cluster?
+  if ! kubectl get nodes --request-timeout=5s &>/dev/null; then
+    echo ""
+    echo -e "  ${RED}${BOLD}ERROR: Cannot connect to the cluster!${NC}"
+    echo ""
+    echo -e "  ${YELLOW}The API server might be down (common after scenarios 1, 6, 15, 16).${NC}"
+    echo -e "  ${YELLOW}Debug steps:${NC}"
+    echo ""
+    echo -e "  ${DIM}# Check if apiserver container is running:${NC}"
+    echo -e "  ${CYAN}crictl ps | grep kube-apiserver${NC}"
+    echo ""
+    echo -e "  ${DIM}# Check apiserver logs:${NC}"
+    echo -e "  ${CYAN}crictl logs \$(crictl ps -a --name kube-apiserver -q | head -1) 2>&1 | tail -20${NC}"
+    echo ""
+    echo -e "  ${DIM}# Check manifest for syntax errors:${NC}"
+    echo -e "  ${CYAN}cat /etc/kubernetes/manifests/kube-apiserver.yaml | head -50${NC}"
+    echo ""
+    echo -e "  ${DIM}# Restart kubelet to force re-read manifests:${NC}"
+    echo -e "  ${CYAN}systemctl restart kubelet${NC}"
+    echo ""
+    echo -e "  ${DIM}# Wait and check again:${NC}"
+    echo -e "  ${CYAN}sleep 30 && kubectl get nodes${NC}"
+    echo ""
+    wait_enter
+    return
+  fi
+
   echo ""
   echo -e "  ${YELLOW}Setting up scenario...${NC}"
   echo ""

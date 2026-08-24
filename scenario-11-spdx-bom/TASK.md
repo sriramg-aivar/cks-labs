@@ -1,35 +1,29 @@
-# Scenario 11: Generate SPDX document (bom tool)
+# Scenario 11: SPDX/BOM Analysis
 
-## Before you start
+## Test BEFORE fix
 ```bash
-# Check the deployment and its images
-kubectl get deployment multi-arch-app -o yaml | grep image:
-
-# Verify bom tool is available
-which bom && bom version
-
-# Check how many containers the deployment has
+# Deployment has 2 containers
 kubectl get deployment multi-arch-app -o jsonpath='{.spec.template.spec.containers[*].name}'
+# Shows: side-a side-b
+
+# Check the images
+kubectl get deployment multi-arch-app -o jsonpath='{.spec.template.spec.containers[*].image}'
+# Shows: alpine:3.19.1 alpine:3.18.4
 ```
 
 ## Task
 
-Deployment `multi-arch-app` (namespace `default`) has 2 containers, each using a
-different alpine-based image. One of them bundles a vulnerable `libcrypto3`.
+1. Use `bom generate --image <image>` for each alpine image
+2. `grep` the SPDX output for `libcrypto3`
+3. Remove the container with the vulnerable image from the Deployment
 
-1. Use `bom generate --image <image>` to create SPDX docs for each image
-2. Find which image contains `libcrypto3`
-3. Remove that container from the Deployment
-
-## Verify
+## Test AFTER fix
 ```bash
-# Deployment should now have only 1 container
+# Only 1 container should remain
 kubectl get deployment multi-arch-app -o jsonpath='{.spec.template.spec.containers[*].name}'
-# Should output only one container name
+# Should show only ONE name (the safe one)
 
-# The remaining image should NOT contain libcrypto3
-# (you can re-run bom on it to confirm)
-
-# Pod should be running with 1 container
+# Pod should be running
 kubectl get pods -l app=multi-arch-app
+# Should show: Running, 1/1
 ```

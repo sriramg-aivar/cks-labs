@@ -127,3 +127,44 @@ cks-labs/
 ├── ...
 └── scenario-16-apiserver-auth/
 ```
+
+---
+
+## Troubleshooting
+
+### "connection refused" / kubectl not working
+
+If you see `connection refused` or `Unable to connect to the server`, the API server is down.
+This commonly happens after scenarios that edit `/etc/kubernetes/manifests/kube-apiserver.yaml`
+(scenarios 1, 6, 15, 16).
+
+```bash
+# Check apiserver container
+crictl ps -a | grep kube-apiserver
+
+# Check logs for errors
+crictl logs $(crictl ps -a --name kube-apiserver -q | head -1) 2>&1 | tail -20
+
+# Common fixes:
+# 1. Check for YAML syntax errors in the manifest
+cat /etc/kubernetes/manifests/kube-apiserver.yaml
+
+# 2. Check for trailing commas in --enable-admission-plugins
+# 3. Check volume/volumeMount paths exist
+
+# 4. Restart kubelet to force re-read
+systemctl restart kubelet
+sleep 30
+kubectl get nodes
+```
+
+### Scenario won't set up (AlreadyExists errors)
+
+Run reset first: press `[x]` in the menu, then `[r]` again.
+
+### Pods stuck in ContainerCreating
+
+```bash
+kubectl describe pod <pod-name> -n <namespace>
+# Check Events section for the actual error
+```

@@ -1,21 +1,15 @@
 # Scenario 5: Container security context (immutability)
 
-## Before you start
+## Test BEFORE fix
 ```bash
-# Check current deployment securityContext
-kubectl get deployment immutable-app -o yaml | grep -A10 securityContext
-
-# Check if pods are running
-kubectl get pods -l app=immutable-app
-
-# Describe to see any issues
-kubectl describe deployment immutable-app | tail -10
+# Deployment has insecure settings
+kubectl get deployment immutable-app -o jsonpath='{.spec.template.spec.containers[0].securityContext}'
+# Shows: runAsUser:0, readOnlyRootFilesystem:false, allowPrivilegeEscalation:true
 ```
 
 ## Task
 
-Deployment `immutable-app` (namespace `default`) is applied but not compliant.
-Edit it so the container has:
+Edit Deployment `immutable-app` (namespace `default`) container securityContext:
 ```yaml
 securityContext:
   runAsUser: 30000
@@ -23,15 +17,19 @@ securityContext:
   allowPrivilegeEscalation: false
 ```
 
-## Verify
+Use: `kubectl edit deployment immutable-app`
+
+## Test AFTER fix
 ```bash
-# Check the securityContext is correct
-kubectl get deployment immutable-app -o jsonpath='{.spec.template.spec.containers[0].securityContext}' | python3 -m json.tool
-
-# Or with grep
-kubectl get deployment immutable-app -o yaml | grep -A5 securityContext
-
-# Verify specific values
+# runAsUser should be 30000
 kubectl get deployment immutable-app -o jsonpath='{.spec.template.spec.containers[0].securityContext.runAsUser}'
-# Should output: 30000
+# Should show: 30000
+
+# readOnlyRootFilesystem should be true
+kubectl get deployment immutable-app -o jsonpath='{.spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem}'
+# Should show: true
+
+# allowPrivilegeEscalation should be false
+kubectl get deployment immutable-app -o jsonpath='{.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation}'
+# Should show: false
 ```

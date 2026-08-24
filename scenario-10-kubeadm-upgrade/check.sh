@@ -30,14 +30,14 @@ if [ -f /tmp/upgrade-commands.txt ]; then
     FAILED=1
   fi
 
-  if echo "$CMDS" | grep -q 'apt-get.*kubeadm\|apt.*install.*kubeadm'; then
+  if echo "$CMDS" | grep -qE 'apt-get.*kubeadm|apt.*install.*kubeadm'; then
     echo "✓ Contains kubeadm package upgrade"
   else
     echo "✗ Should upgrade kubeadm package first"
     FAILED=1
   fi
 
-  if echo "$CMDS" | grep -q 'apt-get.*kubelet\|apt.*install.*kubelet'; then
+  if echo "$CMDS" | grep -qE 'apt-get.*kubelet|apt.*install.*kubelet'; then
     echo "✓ Contains kubelet package upgrade"
   else
     echo "✗ Should upgrade kubelet package"

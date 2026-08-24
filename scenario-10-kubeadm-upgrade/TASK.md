@@ -1,39 +1,41 @@
 # Scenario 10: Kubernetes Node Upgrade (kubeadm)
 
-## Before you start
+## Test BEFORE fix
 ```bash
-# Check current node versions
-kubectl get nodes -o wide
+# Node should be schedulable (Ready, no SchedulingDisabled)
+kubectl get nodes
 
-# Check pods running on the worker
-kubectl get pods -o wide | grep node01
+# Pods are running on both nodes
+kubectl get pods -o wide
 
-# Check the deployment to drain
-kubectl get deployment drain-test
+# No upgrade commands file exists yet
+cat /tmp/upgrade-commands.txt
+# ^ Should show: No such file
 ```
 
 ## Task
 
-1. Drain worker node `node01` (ignore DaemonSets, delete emptyDir data)
-2. Create `/tmp/upgrade-commands.txt` with the EXACT commands to run ON the worker
-   node to upgrade from v1.30.0 to v1.31.0 (one command per line)
-3. Uncordon node01
+The cluster's worker node `node01` needs to be upgraded.
+The setup script shows you the current and target versions.
 
-Your file should contain the complete sequence for a **WORKER node** upgrade.
+Perform the upgrade procedure:
 
-## Verify
+1. **Drain** worker node `node01` (ignore DaemonSets, delete emptyDir data)
+2. **Write** the EXACT upgrade commands to `/tmp/upgrade-commands.txt`
+   (the sequence you would run ON the worker node, one command per line)
+3. **Uncordon** node01
+
+The commands file should contain the complete `kubeadm upgrade` sequence
+for a **WORKER node** (not control-plane).
+
+## Test AFTER fix
 ```bash
-# Node should be Ready and schedulable (not cordoned)
+# Node should be Ready and schedulable (no SchedulingDisabled)
 kubectl get nodes
-# node01 should show 'Ready' without 'SchedulingDisabled'
+# node01 should show Ready without SchedulingDisabled
 
-# Commands file should exist
+# Commands file should exist and contain correct sequence
 cat /tmp/upgrade-commands.txt
-
-# Should contain these key commands:
-grep 'kubeadm upgrade node' /tmp/upgrade-commands.txt
-grep 'apt-get.*kubeadm' /tmp/upgrade-commands.txt
-grep 'apt-get.*kubelet' /tmp/upgrade-commands.txt
-grep 'daemon-reload' /tmp/upgrade-commands.txt
-grep 'restart.*kubelet' /tmp/upgrade-commands.txt
+# Should have: apt-get update, apt-get install kubeadm, kubeadm upgrade node,
+#              apt-get install kubelet kubectl, daemon-reload, restart kubelet
 ```

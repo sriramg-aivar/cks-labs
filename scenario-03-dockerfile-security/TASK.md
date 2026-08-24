@@ -1,39 +1,41 @@
-# Scenario 3: Dockerfile security best practices
+# Scenario 3: Dockerfile security
 
-## Before you start
+## Test BEFORE fix
 ```bash
-# Check the current Dockerfile
-cat /root/Dockerfile 2>/dev/null || cat Dockerfile
+# Dockerfile runs as root (no USER line)
+cat Dockerfile | grep -i USER
+# Shows nothing — runs as root!
 
-# Check the deployment's current securityContext
-kubectl get deployment hardened-app -o yaml | grep -A10 securityContext
-
-# Check if pods are running
-kubectl get pods -l app=hardened-app
+# Deployment has insecure securityContext
+kubectl get deployment hardened-app -o jsonpath='{.spec.template.spec.containers[0].securityContext}'
+# Shows: runAsUser:0, privileged:true, readOnlyRootFilesystem:false
 ```
 
 ## Task
 
-1. A Dockerfile at `/root/Dockerfile` currently runs as root. Add `USER nobody` to it.
-
-2. Fix the Deployment `hardened-app` (namespace `default`) so its container securityContext has:
+1. Fix `Dockerfile` — add `USER nobody`
+2. Fix Deployment `hardened-app` securityContext:
 ```yaml
 securityContext:
   runAsUser: 65535
   readOnlyRootFilesystem: true
   privileged: false
 ```
+Then apply: `kubectl apply -f deployment.yaml`
 
-(You don't need to build the image — just fix the Dockerfile and Deployment YAML.)
-
-## Verify
+## Test AFTER fix
 ```bash
 # Dockerfile should have USER nobody
-grep -i 'USER nobody' /root/Dockerfile
+grep 'USER nobody' Dockerfile
+# Should match
 
-# Deployment should have correct securityContext
-kubectl get deployment hardened-app -o yaml | grep -A5 securityContext
+# Deployment securityContext should be secure
+kubectl get deployment hardened-app -o jsonpath='{.spec.template.spec.containers[0].securityContext.runAsUser}'
+# Should show: 65535
 
-# Check runAsUser is 65535
-kubectl get deployment hardened-app -o jsonpath='{.spec.template.spec.containers[0].securityContext}'
+kubectl get deployment hardened-app -o jsonpath='{.spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem}'
+# Should show: true
+
+kubectl get deployment hardened-app -o jsonpath='{.spec.template.spec.containers[0].securityContext.privileged}'
+# Should show: false
 ```

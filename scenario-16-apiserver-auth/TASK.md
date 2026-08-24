@@ -1,48 +1,50 @@
 # Scenario 16: API server authentication
 
-## Before you start
+## Test BEFORE fix
 ```bash
-# Check current apiserver flags
+# Anonymous auth is enabled (BAD)
 cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep anonymous-auth
-cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep authorization-mode
-cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep enable-admission-plugins
+# Shows: --anonymous-auth=true
 
-# Try anonymous access (might work if broken)
-kubectl auth can-i get pods --as=system:anonymous
+# Authorization is AlwaysAllow (BAD)
+cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep authorization-mode
+# Shows: --authorization-mode=AlwaysAllow
+
+# NodeRestriction is missing from admission plugins
+cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep enable-admission-plugins
+# Shows: no NodeRestriction
 ```
 
 ## Task
 
-Reconfigure kube-apiserver on the controlplane node:
+Edit `/etc/kubernetes/manifests/kube-apiserver.yaml`:
 
 1. Set `--anonymous-auth=false`
 2. Set `--authorization-mode=Node,RBAC`
-3. Ensure `NodeRestriction` is in `--enable-admission-plugins`
+3. Add `NodeRestriction` to `--enable-admission-plugins`
 
-Edit: `/etc/kubernetes/manifests/kube-apiserver.yaml`
-
-## Verify
+## Test AFTER fix
 ```bash
-# Wait for apiserver to restart (~30-60s)
+# Wait for apiserver restart
 sleep 40
 
-# API server should be running
+# Apiserver running
 kubectl get pods -n kube-system | grep apiserver
+# Should show: Running
 
-# Check flags
+# Anonymous auth disabled
 cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep anonymous-auth
 # Should show: --anonymous-auth=false
 
+# Authorization mode correct
 cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep authorization-mode
 # Should show: --authorization-mode=Node,RBAC
 
+# NodeRestriction in admission plugins
 cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep enable-admission-plugins
-# Should include NodeRestriction
+# Should contain: NodeRestriction
 
-# Anonymous access should be denied
+# Anonymous access denied
 kubectl auth can-i get pods --as=system:anonymous
-# Should output: no
-
-# Normal access should work
-kubectl get nodes
+# Should show: no
 ```

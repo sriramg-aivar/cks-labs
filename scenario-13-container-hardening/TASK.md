@@ -1,43 +1,48 @@
 # Scenario 13: Container Runtime Daemon Hardening
 
-## Before you start
+## Test BEFORE fix
 ```bash
-# Check current (insecure) daemon.json
+# daemon.json is insecure
 cat /opt/docker/daemon.json
+# Shows: icc: true, no-new-privileges: false, live-restore: false
+# Missing: userns-remap
 
-# Check permissions info
-cat /opt/docker/permissions.txt
-
-# Check the fix script template
+# fix-permissions.sh is empty (just comments)
 cat /opt/docker/fix-permissions.sh
+# Shows: TODO comments only
 ```
 
 ## Task
 
-Fix the container runtime configuration at `/opt/docker/daemon.json`:
+Fix `/opt/docker/daemon.json`:
+1. `"icc": false`
+2. `"userns-remap": "default"`
+3. `"no-new-privileges": true`
+4. `"live-restore": true`
 
-1. Set `icc` to `false` (disable inter-container communication)
-2. Add `userns-remap` set to `"default"` (user namespace isolation)
-3. Set `no-new-privileges` to `true`
-4. Set `live-restore` to `true`
+Fix `/opt/docker/fix-permissions.sh` — add commands to:
+- `chown root:root /var/run/docker.sock`
+- `chmod 660 /var/run/docker.sock`
 
-Also write the correct commands in `/opt/docker/fix-permissions.sh` to:
-- Set socket ownership to `root:root`
-- Set socket permissions to `660`
-
-## Verify
+## Test AFTER fix
 ```bash
-# daemon.json should have all security settings
-cat /opt/docker/daemon.json | python3 -m json.tool
+# daemon.json should have all secure settings
+grep '"icc"' /opt/docker/daemon.json
+# Should show: "icc": false
 
-# Check specific values
-grep '"icc"' /opt/docker/daemon.json          # should be false
-grep 'userns-remap' /opt/docker/daemon.json    # should be "default"
-grep 'no-new-privileges' /opt/docker/daemon.json  # should be true
-grep 'live-restore' /opt/docker/daemon.json    # should be true
+grep 'userns-remap' /opt/docker/daemon.json
+# Should show: "userns-remap": "default"
 
-# fix-permissions.sh should have correct commands
-cat /opt/docker/fix-permissions.sh
+grep 'no-new-privileges' /opt/docker/daemon.json
+# Should show: "no-new-privileges": true
+
+grep 'live-restore' /opt/docker/daemon.json
+# Should show: "live-restore": true
+
+# fix script should have correct commands
 grep 'chown root:root' /opt/docker/fix-permissions.sh
+# Should match
+
 grep 'chmod 660' /opt/docker/fix-permissions.sh
+# Should match
 ```

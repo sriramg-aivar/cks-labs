@@ -1,42 +1,48 @@
 # Scenario 9: Disable API credential auto-mounting
 
-## Before you start
+## Test BEFORE fix
 ```bash
-# Check the ServiceAccount
-kubectl get sa restricted-sa -o yaml
+# ServiceAccount has automount enabled (or not set = defaults to true)
 kubectl get sa restricted-sa -o jsonpath='{.automountServiceAccountToken}'
+# Shows: true (or empty = defaults true)
 
-# Check the deployment
-kubectl get deployment token-app -o yaml | grep -A5 serviceAccount
-kubectl get deployment token-app -o yaml | grep -A20 volumes
-
-# Check if token is currently auto-mounted in the pod
+# Token is auto-mounted in the pod
 kubectl exec deploy/token-app -- ls /var/run/secrets/kubernetes.io/serviceaccount/
+# Shows: ca.crt namespace token (auto-mounted by kubelet)
+
+# No projected volume in deployment
+kubectl get deployment token-app -o yaml | grep projected
+# Shows nothing
 ```
 
 ## Task
 
-1. Patch ServiceAccount `restricted-sa` (namespace `default`):
+1. Patch ServiceAccount `restricted-sa`:
    - Set `automountServiceAccountToken: false`
 
-2. Edit Deployment `token-app` to manually mount the token via a **projected volume**:
-   - `automountServiceAccountToken: false` on the pod spec
-   - Add a projected volume with: serviceAccountToken, configMap `kube-root-ca.crt`, and downwardAPI namespace
+2. Edit Deployment `token-app`:
+   - Set `automountServiceAccountToken: false` in pod spec
+   - Add a **projected volume** to manually mount the token:
+     - serviceAccountToken (path: token, expirationSeconds: 3607)
+     - configMap `kube-root-ca.crt` (key: ca.crt, path: ca.crt)
+     - downwardAPI (path: namespace, fieldRef: metadata.namespace)
    - Mount it read-only at `/var/run/secrets/kubernetes.io/serviceaccount`
 
-## Verify
+## Test AFTER fix
 ```bash
-# ServiceAccount should have automount disabled
+# SA automount disabled
 kubectl get sa restricted-sa -o jsonpath='{.automountServiceAccountToken}'
-# Should output: false
+# Should show: false
 
-# Deployment should have automountServiceAccountToken: false
-kubectl get deployment token-app -o yaml | grep automountServiceAccountToken
+# Deployment has automount false
+kubectl get deployment token-app -o yaml | grep 'automountServiceAccountToken'
+# Should show: false
 
-# Pod should have the projected volume
-kubectl get deployment token-app -o yaml | grep -A15 'projected'
+# Projected volume exists
+kubectl get deployment token-app -o yaml | grep 'projected'
+# Should match
 
-# Token should still be accessible inside the pod (manually mounted)
+# Token still accessible in pod (manually mounted)
 kubectl exec deploy/token-app -- ls /var/run/secrets/kubernetes.io/serviceaccount/
-# Should show: ca.crt  namespace  token
+# Should show: ca.crt namespace token
 ```

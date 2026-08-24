@@ -1,42 +1,56 @@
 # Scenario 12: Restricted Pod Security Standard
 
-## Before you start
+## Test BEFORE fix
 ```bash
-# Check namespace labels (PSS enforcement)
-kubectl get ns locked-down --show-labels
+# Namespace enforces restricted PSS
+kubectl get ns locked-down -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/enforce}'
+# Shows: restricted
 
-# Check deployment status (pods should be failing)
+# Deployment exists but pods FAIL to be created
 kubectl -n locked-down get deployment noncompliant-app
-kubectl -n locked-down get replicaset
-kubectl -n locked-down describe rs | grep -A5 Warning
+kubectl -n locked-down get pods
+# Shows: 0 pods (none created)
 
-# See current pod spec
-kubectl -n locked-down get deployment noncompliant-app -o yaml | grep -A20 containers
+# ReplicaSet shows WHY pods fail
+kubectl -n locked-down describe rs | grep -A2 Warning
+# Shows: violates PodSecurity "restricted"
 ```
 
 ## Task
 
-Namespace `locked-down` enforces the `restricted` Pod Security Standard.
-Deployment `noncompliant-app` is failing to create pods.
+Fix Deployment `noncompliant-app` in namespace `locked-down` to satisfy `restricted` PSS:
 
-Fix the Deployment's pod spec to satisfy `restricted` PSS:
-- `runAsNonRoot: true` (pod-level)
-- `seccompProfile.type: RuntimeDefault` (pod-level)
-- `allowPrivilegeEscalation: false` (container-level)
-- `runAsNonRoot: true` (container-level)
-- `runAsUser: 1000` (container-level)
-- `capabilities.drop: ["ALL"]` (container-level)
+Pod-level securityContext:
+```yaml
+securityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+```
 
-Do NOT modify the namespace labels.
+Container-level securityContext:
+```yaml
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop: ["ALL"]
+```
 
-## Verify
+Do NOT modify namespace labels.
+
+## Test AFTER fix
 ```bash
-# Pods should be created and running now
+# Pods should now be created and running
 kubectl -n locked-down get pods
+# Should show: Running
 
 # Deployment should be Available
 kubectl -n locked-down get deployment noncompliant-app
+# AVAILABLE should be >= 1
 
-# Check securityContext is set correctly
-kubectl -n locked-down get deployment noncompliant-app -o yaml | grep -A10 securityContext
+# No more PSS violations
+kubectl -n locked-down describe rs | grep Warning
+# Should show nothing (or old events only)
 ```

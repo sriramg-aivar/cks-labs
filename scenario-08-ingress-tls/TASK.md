@@ -1,41 +1,44 @@
 # Scenario 8: Expose HTTPS via Ingress
 
-## Before you start
+## Test BEFORE fix
 ```bash
-# Check deployment and service exist
-kubectl -n web-ns get deployment web
-kubectl -n web-ns get svc web
+# Deployment and Service exist
+kubectl -n web-ns get deploy,svc
+# Shows: deployment/web, service/web
 
-# Check the TLS secret exists
+# TLS secret exists
 kubectl -n web-ns get secret web-tls
+# Shows the secret
 
-# Check existing ingress (should be none)
+# No Ingress yet
 kubectl -n web-ns get ingress
-
-# Check ingress controller is running
-kubectl get pods -n ingress-nginx 2>/dev/null || kubectl get pods --all-namespaces | grep ingress
+# Shows: No resources found
 ```
 
 ## Task
 
-Create an Ingress in namespace `web-ns` that:
-1. Terminates TLS using secret `web-tls`
-2. Routes host `web.example.com` to service `web` on port `80`
-3. Has annotation: `nginx.ingress.kubernetes.io/ssl-redirect: "true"`
-4. Uses `ingressClassName: nginx`
+Create an Ingress in namespace `web-ns`:
+1. Name: `web-ingress`
+2. TLS: terminate using secret `web-tls` for host `web.example.com`
+3. Route: `web.example.com` → service `web` port `80`
+4. Annotation: `nginx.ingress.kubernetes.io/ssl-redirect: "true"`
+5. `ingressClassName: nginx`
 
-## Verify
+## Test AFTER fix
 ```bash
-# Ingress should exist with TLS configured
-kubectl -n web-ns get ingress
-kubectl -n web-ns describe ingress web-ingress
+# Ingress should exist
+kubectl -n web-ns get ingress web-ingress
+# Should show the ingress
 
-# Check TLS section
-kubectl -n web-ns get ingress web-ingress -o yaml | grep -A3 tls
+# TLS should be configured
+kubectl -n web-ns get ingress web-ingress -o jsonpath='{.spec.tls[0].secretName}'
+# Should show: web-tls
 
-# Check the host rule
-kubectl -n web-ns get ingress web-ingress -o yaml | grep host
+# Host should be correct
+kubectl -n web-ns get ingress web-ingress -o jsonpath='{.spec.rules[0].host}'
+# Should show: web.example.com
 
-# Check annotation
-kubectl -n web-ns get ingress web-ingress -o yaml | grep ssl-redirect
+# Annotation should be set
+kubectl -n web-ns get ingress web-ingress -o jsonpath='{.metadata.annotations}'
+# Should contain: ssl-redirect: "true"
 ```

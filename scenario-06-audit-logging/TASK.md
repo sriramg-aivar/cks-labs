@@ -1,45 +1,48 @@
 # Scenario 6: Audit logging
 
-## Before you start
+## Test BEFORE fix
 ```bash
-# Check if audit policy file exists
-ls -la /etc/kubernetes/audit-policy.yaml
-cat /etc/kubernetes/audit-policy.yaml
-
-# Check current kube-apiserver flags (no audit flags yet)
+# No audit flags in apiserver yet
 cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep audit
+# Shows nothing — audit not configured
 
-# Check log directory
-ls /var/log/kubernetes/audit/ 2>/dev/null || echo "directory doesn't exist yet"
+# Audit log doesn't exist
+ls /var/log/kubernetes/audit/audit.log 2>&1
+# Shows: No such file
+
+# Policy file exists (created by setup)
+cat /etc/kubernetes/audit-policy.yaml
+# Shows the policy
 ```
 
 ## Task
 
-Reconfigure the API server to enable audit logging:
+Edit `/etc/kubernetes/manifests/kube-apiserver.yaml` to enable audit logging:
 
-1. Edit `/etc/kubernetes/manifests/kube-apiserver.yaml` to add:
+1. Add flags:
    - `--audit-policy-file=/etc/kubernetes/audit-policy.yaml`
    - `--audit-log-path=/var/log/kubernetes/audit/audit.log`
    - `--audit-log-maxbackup=2`
 
-2. Add the corresponding hostPath volumes and volumeMounts:
-   - Mount the policy file (readOnly)
-   - Mount the log directory
+2. Add hostPath volumes + volumeMounts:
+   - Policy file: mount `/etc/kubernetes/audit-policy.yaml` (readOnly, type: File)
+   - Log dir: mount `/var/log/kubernetes/audit` (type: DirectoryOrCreate)
 
-## Verify
+## Test AFTER fix
 ```bash
 # Wait for apiserver to restart (~30-60s)
-sleep 30
+sleep 40
 
-# API server should be running
+# Apiserver should be running
 kubectl get pods -n kube-system | grep apiserver
+# Should show: Running
 
-# Check the flags are in place
-cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep audit
+# Audit flags should be present
+ps -ef | grep kube-apiserver | grep audit-log-path
+# Should match
 
-# Audit log should exist
+# Audit log should exist with content
 ls -la /var/log/kubernetes/audit/audit.log
-
-# Check log has entries
-tail -5 /var/log/kubernetes/audit/audit.log
+tail -1 /var/log/kubernetes/audit/audit.log
+# Should show JSON log entries
 ```
