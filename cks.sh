@@ -154,7 +154,8 @@ show_menu() {
   echo -e "    ${CYAN}[t]${NC} Show Task (question)"
   echo -e "    ${CYAN}[s]${NC} Show Solution"
   echo -e "    ${CYAN}[c]${NC} Check my answer"
-  echo -e "    ${CYAN}[x]${NC} Reset (cleanup) scenario"
+  echo -e "    ${CYAN}[x]${NC} Reset (cleanup) this scenario"
+  echo -e "    ${CYAN}[f]${NC} Full reset (fresh cluster — cleans ALL scenarios)"
   echo -e "    ${CYAN}[d]${NC} Mark done & next →"
   echo -e "    ${CYAN}[n]${NC} Next scenario →"
   echo -e "    ${CYAN}[p]${NC} Previous scenario ←"
@@ -316,6 +317,63 @@ do_reset() {
   wait_enter
 }
 
+do_full_reset() {
+  echo ""
+  echo -e "  ${YELLOW}${BOLD}FULL CLUSTER RESET${NC}"
+  echo -e "  ${DIM}This runs cleanup for ALL scenarios and restores the cluster to a fresh state.${NC}"
+  echo ""
+  echo -ne "  ${BOLD}Are you sure? [y/N]: ${NC}"
+  read -r confirm
+  echo ""
+  case "$confirm" in
+    y|Y)
+      echo -e "  ${YELLOW}Running cleanup for every scenario...${NC}"
+      echo ""
+      for s in "${SCENARIOS[@]}"; do
+        local cdir="$SCRIPT_DIR/$s"
+        if [ -f "$cdir/cleanup.sh" ]; then
+          echo -e "  ${DIM}→ cleaning $s${NC}"
+          bash "$cdir/cleanup.sh" >/dev/null 2>&1 || true
+        fi
+      done
+      SCENARIO_ACTIVE=false
+
+      echo ""
+      echo -e "  ${YELLOW}Deleting any leftover scenario namespaces...${NC}"
+      kubectl delete namespace \
+        secure monitoring team-a team-b web-ns locked-down \
+        svc-ns client-ns payments project-x shop \
+        --ignore-not-found --grace-period=0 --force >/dev/null 2>&1 || true
+
+      echo -e "  ${YELLOW}Cleaning leftover default-namespace workloads...${NC}"
+      kubectl delete deployment hardened-app immutable-app token-app multi-arch-app drain-test \
+        -n default --ignore-not-found --grace-period=0 --force >/dev/null 2>&1 || true
+      kubectl delete serviceaccount restricted-sa -n default --ignore-not-found >/dev/null 2>&1 || true
+
+      echo -e "  ${YELLOW}Restoring node cordon state...${NC}"
+      kubectl uncordon node01 >/dev/null 2>&1 || true
+
+      echo ""
+      echo -e "  ${YELLOW}Checking cluster health...${NC}"
+      if kubectl get nodes --request-timeout=5s >/dev/null 2>&1; then
+        echo -e "  ${GREEN}✓ API server reachable${NC}"
+        kubectl get nodes 2>/dev/null | sed 's/^/    /'
+      else
+        echo -e "  ${RED}✗ API server not reachable — a manifest may still be broken.${NC}"
+        echo -e "  ${DIM}Try: systemctl restart kubelet ; sleep 30 ; kubectl get nodes${NC}"
+      fi
+
+      echo ""
+      echo -e "  ${GREEN}${BOLD}✓ Cluster reset to fresh state.${NC}"
+      ;;
+    *)
+      echo -e "  ${DIM}Cancelled.${NC}"
+      ;;
+  esac
+  echo ""
+  wait_enter
+}
+
 do_quit() {
   echo ""
   # Cleanup active scenario
@@ -432,6 +490,7 @@ main() {
       s|S) show_solution; wait_enter ;;
       c|C) do_check ;;
       x|X) do_reset ;;
+      f|F) do_full_reset ;;
       d|D) mark_completed "$CURRENT"; next_scenario ;;
       n|N) next_scenario ;;
       p|P) prev_scenario ;;
