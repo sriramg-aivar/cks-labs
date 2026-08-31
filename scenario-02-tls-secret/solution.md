@@ -2,7 +2,10 @@
 
 ## Create the TLS secret
 ```bash
+```bash
+cd ~/cks-work/scenario-02
 kubectl -n secure create secret tls web-tls --cert=tls.crt --key=tls.key
+```
 ```
 
 ## Verify

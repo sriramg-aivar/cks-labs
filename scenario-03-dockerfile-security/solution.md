@@ -20,12 +20,12 @@ securityContext:
   readOnlyRootFilesystem: true
   privileged: false
 ```
-Or: `kubectl apply -f deployment.yaml`
+Or: `kubectl apply -f ~/cks-work/scenario-03/deployment.yaml`
 
 ## Verify
 ```bash
 # Dockerfile
-grep 'USER nobody' /root/Dockerfile
+grep 'USER nobody' ~/cks-work/scenario-03/Dockerfile
 
 # Deployment
 kubectl get deployment hardened-app -o jsonpath='{.spec.template.spec.containers[0].securityContext}'

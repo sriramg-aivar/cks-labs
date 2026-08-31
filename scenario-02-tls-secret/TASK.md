@@ -21,7 +21,7 @@ Deployment `web-app` in namespace `secure` is stuck in ContainerCreating because
 mounts a TLS secret named `web-tls` that doesn't exist yet.
 
 Create the `web-tls` secret (of type TLS) in namespace `secure` using the certificate
-and key files (`tls.crt`, `tls.key`) in the current directory, so the pods start.
+and key files (`tls.crt`, `tls.key`) in `~/cks-work/scenario-02/`, so the pods start.
 
 ## Test AFTER fix
 ```bash

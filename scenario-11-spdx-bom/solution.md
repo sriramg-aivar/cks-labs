@@ -2,6 +2,7 @@
 
 ## Generate SPDX documents
 ```bash
+cd ~/cks-work/scenario-11
 bom generate --image alpine:3.19.1 --output alpine-3191.spdx
 bom generate --image alpine:3.18.4 --output alpine-3184.spdx
 ```

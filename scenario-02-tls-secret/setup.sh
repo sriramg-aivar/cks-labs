@@ -2,11 +2,13 @@
 set -euo pipefail
 kubectl create namespace secure --dry-run=client -o yaml | kubectl apply -f -
 
-WORKDIR=$(mktemp -d)
+# Work directory OUTSIDE the repo (in your home dir)
+WORKDIR="${HOME:-/root}/cks-work/scenario-02"
+mkdir -p "$WORKDIR"
 openssl req -x509 -nodes -newkey rsa:2048 -keyout "$WORKDIR/tls.key" -out "$WORKDIR/tls.crt" \
   -days 365 -subj "/CN=web-app.secure.svc.cluster.local" 2>/dev/null
-cp "$WORKDIR/tls.crt" "$WORKDIR/tls.key" .
-echo "Generated tls.crt / tls.key in this folder — you'll use these to create the secret."
+echo "Generated cert/key at: $WORKDIR/tls.crt and $WORKDIR/tls.key"
+echo "Use these to create the secret (cd $WORKDIR)."
 
 cat <<'YAML' | kubectl apply -f -
 apiVersion: apps/v1

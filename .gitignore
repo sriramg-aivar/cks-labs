@@ -1,0 +1,11 @@
+# Progress tracking (local state)
+.cks-progress
+
+# Any scenario work files (should be in ~/cks-work, but just in case)
+cks-work/
+*.spdx
+tls.crt
+tls.key
+Dockerfile
+deployment.yaml
+*.tmp
