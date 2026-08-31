@@ -18,10 +18,10 @@ kubectl run test --rm -it --image=busybox:1.36 --restart=Never -- wget -qO- --ti
 ## Task
 
 Create a NetworkPolicy in namespace `team-a` so that:
-1. All ingress to pod `backend` is **denied by default**
-2. Ingress is allowed **ONLY** from pods in namespace `team-b`
+1. All ingress to pod `backend` is denied by default.
+2. Ingress is allowed ONLY from pods in namespace `team-b`.
 
-Hint: use `namespaceSelector` with label `kubernetes.io/metadata.name: team-b`
+Traffic from `team-b` must keep working; traffic from any other namespace must be blocked.
 
 ## Test AFTER fix
 ```bash

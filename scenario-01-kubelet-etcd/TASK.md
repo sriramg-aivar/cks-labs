@@ -17,14 +17,12 @@ cat /etc/kubernetes/manifests/etcd.yaml | grep client-cert-auth
 
 ## Task
 
-The kubelet on the controlplane node is insecure. Fix:
+The kubelet and etcd on the controlplane node are insecure. Fix them:
 
-1. Edit `/var/lib/kubelet/config.yaml`:
-   - Set `authentication.anonymous.enabled` → `false`
-   - Set `authorization.mode` → `Webhook`
-2. Restart kubelet: `systemctl restart kubelet`
-3. Edit `/etc/kubernetes/manifests/etcd.yaml`:
-   - Set `--client-cert-auth=true`
+1. In the kubelet config `/var/lib/kubelet/config.yaml`, disable anonymous authentication
+   and set the authorization mode to webhook, then restart the kubelet.
+2. In the etcd static pod manifest `/etc/kubernetes/manifests/etcd.yaml`, enable client
+   certificate authentication.
 
 ## Test AFTER fix
 ```bash

@@ -17,11 +17,13 @@ cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep enable-admission-plugin
 
 ## Task
 
-Edit `/etc/kubernetes/manifests/kube-apiserver.yaml`:
+Secure the kube-apiserver by editing `/etc/kubernetes/manifests/kube-apiserver.yaml`:
 
-1. Set `--anonymous-auth=false`
-2. Set `--authorization-mode=Node,RBAC`
-3. Add `NodeRestriction` to `--enable-admission-plugins`
+1. Disable anonymous authentication.
+2. Set the authorization mode to Node,RBAC.
+3. Enable the NodeRestriction admission controller.
+
+The API server is a static pod — saving the manifest restarts it automatically.
 
 ## Test AFTER fix
 ```bash

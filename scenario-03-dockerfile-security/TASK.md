@@ -13,15 +13,12 @@ kubectl get deployment hardened-app -o jsonpath='{.spec.template.spec.containers
 
 ## Task
 
-1. Fix `Dockerfile` — add `USER nobody`
-2. Fix Deployment `hardened-app` securityContext:
-```yaml
-securityContext:
-  runAsUser: 65535
-  readOnlyRootFilesystem: true
-  privileged: false
-```
-Then apply: `kubectl apply -f deployment.yaml`
+A `Dockerfile` in the current directory runs as root. Harden it and the running workload:
+
+1. Edit `Dockerfile` so the container runs as the `nobody` user.
+2. Edit Deployment `hardened-app` (namespace `default`) so its container runs as
+   non-root UID `65535`, uses a read-only root filesystem, and is not privileged.
+3. Apply your changes: `kubectl apply -f deployment.yaml`
 
 ## Test AFTER fix
 ```bash

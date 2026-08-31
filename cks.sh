@@ -17,7 +17,7 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
-# All 16 scenarios in order
+# All scenarios in order
 SCENARIOS=(
   "scenario-01-kubelet-etcd"
   "scenario-02-tls-secret"
@@ -35,6 +35,7 @@ SCENARIOS=(
   "scenario-14-cilium-policy"
   "scenario-15-imagepolicywebhook"
   "scenario-16-apiserver-auth"
+  "scenario-17-istio"
 )
 
 SCENARIO_TITLES=(
@@ -54,11 +55,14 @@ SCENARIO_TITLES=(
   "Cilium Network Policy"
   "ImagePolicyWebhook"
   "API Server Auth"
+  "Istio Injection & mTLS"
 )
 
 CURRENT=0
 COMPLETED=()
 SCENARIO_ACTIVE=false  # tracks if a scenario is currently set up
+TOTAL=${#SCENARIOS[@]}  # total number of scenarios (auto-counted)
+LAST_INDEX=$((TOTAL - 1))
 
 # ─── Progress management ───────────────────────────────────────────
 
@@ -126,14 +130,14 @@ show_header() {
 
   # Progress
   local done=${#COMPLETED[@]}
-  echo -e "  Progress: ${GREEN}${done}${NC}/16 completed"
+  echo -e "  Progress: ${GREEN}${done}${NC}/${TOTAL} completed"
   echo ""
 
   # Current scenario
   if is_completed "$idx"; then
-    echo -e "  ${GREEN}▶ Scenario ${numstr}/16: ${SCENARIO_TITLES[$idx]} ✓${NC}"
+    echo -e "  ${GREEN}▶ Scenario ${numstr}/${TOTAL}: ${SCENARIO_TITLES[$idx]} ✓${NC}"
   else
-    echo -e "  ${YELLOW}▶ Scenario ${numstr}/16: ${SCENARIO_TITLES[$idx]}${NC}"
+    echo -e "  ${YELLOW}▶ Scenario ${numstr}/${TOTAL}: ${SCENARIO_TITLES[$idx]}${NC}"
   fi
   echo ""
 }
@@ -330,7 +334,7 @@ do_quit() {
   case "$qchoice" in
     s|S)
       save_progress
-      echo -e "\n  ${GREEN}Progress saved (${#COMPLETED[@]}/16 done). See you next time! 🔒${NC}\n"
+      echo -e "\n  ${GREEN}Progress saved (${#COMPLETED[@]}/${TOTAL} done). See you next time! 🔒${NC}\n"
       exit 0
       ;;
     r|R)
@@ -347,7 +351,7 @@ do_quit() {
 
 list_scenarios() {
   echo ""
-  echo -e "  ${BOLD}All 16 CKS Scenarios:${NC}"
+  echo -e "  ${BOLD}All ${TOTAL} CKS Scenarios:${NC}"
   echo ""
   for i in "${!SCENARIOS[@]}"; do
     local num=$((i + 1))
@@ -372,7 +376,7 @@ list_scenarios() {
 }
 
 next_scenario() {
-  if [ $CURRENT -lt 15 ]; then
+  if [ $CURRENT -lt $LAST_INDEX ]; then
     CURRENT=$((CURRENT + 1))
     save_progress
   else
@@ -401,7 +405,7 @@ main() {
   # Allow jumping to a specific scenario via argument
   if [ "${1:-}" ] && [[ "${1:-}" =~ ^[0-9]+$ ]]; then
     local target=$((10#$1 - 1))
-    if [ $target -ge 0 ] && [ $target -le 15 ]; then
+    if [ $target -ge 0 ] && [ $target -le $LAST_INDEX ]; then
       CURRENT=$target
       save_progress
     fi

@@ -17,12 +17,11 @@ kubectl -n web-ns get ingress
 
 ## Task
 
-Create an Ingress in namespace `web-ns`:
-1. Name: `web-ingress`
-2. TLS: terminate using secret `web-tls` for host `web.example.com`
-3. Route: `web.example.com` → service `web` port `80`
-4. Annotation: `nginx.ingress.kubernetes.io/ssl-redirect: "true"`
-5. `ingressClassName: nginx`
+Create an Ingress named `web-ingress` in namespace `web-ns` that:
+1. Terminates TLS for host `web.example.com` using the existing secret `web-tls`.
+2. Routes `web.example.com` traffic to Service `web` on port `80`.
+3. Forces HTTP→HTTPS redirect (nginx ssl-redirect annotation).
+4. Uses the `nginx` ingress class.
 
 ## Test AFTER fix
 ```bash

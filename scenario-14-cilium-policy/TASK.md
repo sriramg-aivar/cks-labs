@@ -13,13 +13,11 @@ kubectl -n svc-ns get ciliumnetworkpolicy
 
 ## Task
 
-Write a `CiliumNetworkPolicy` (apiVersion: `cilium.io/v2`) in namespace `svc-ns`:
+Write and apply a CiliumNetworkPolicy in namespace `svc-ns` that protects the
+`secure-svc` workload (label `app: secure-svc`):
 
-1. Select pods with label `app: secure-svc`
-2. Allow ingress from namespace `client-ns` WITH `authentication.mode: "required"` (mTLS)
-3. Allow ingress from host (`fromEntities: [host]`) WITHOUT mutual auth
-
-Apply with: `kubectl apply -f cnp.yaml`
+1. Allow ingress from pods in namespace `client-ns`, requiring mutual authentication (mTLS).
+2. Allow ingress from the host itself, WITHOUT requiring mutual authentication.
 
 ## Test AFTER fix
 ```bash

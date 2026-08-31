@@ -18,27 +18,14 @@ kubectl -n locked-down describe rs | grep -A2 Warning
 
 ## Task
 
-Fix Deployment `noncompliant-app` in namespace `locked-down` to satisfy `restricted` PSS:
+Namespace `locked-down` enforces the `restricted` Pod Security Standard, and Deployment
+`noncompliant-app` is failing to create pods because it violates that standard.
 
-Pod-level securityContext:
-```yaml
-securityContext:
-  runAsNonRoot: true
-  seccompProfile:
-    type: RuntimeDefault
-```
+Fix the Deployment's pod template so it satisfies `restricted` PSS. That means: run as
+non-root, disallow privilege escalation, drop ALL capabilities, and set the seccomp
+profile to the runtime default.
 
-Container-level securityContext:
-```yaml
-securityContext:
-  allowPrivilegeEscalation: false
-  runAsNonRoot: true
-  runAsUser: 1000
-  capabilities:
-    drop: ["ALL"]
-```
-
-Do NOT modify namespace labels.
+Do NOT modify the namespace labels — fix the workload.
 
 ## Test AFTER fix
 ```bash

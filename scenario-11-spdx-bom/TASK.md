@@ -13,9 +13,11 @@ kubectl get deployment multi-arch-app -o jsonpath='{.spec.template.spec.containe
 
 ## Task
 
-1. Use `bom generate --image <image>` for each alpine image
-2. `grep` the SPDX output for `libcrypto3`
-3. Remove the container with the vulnerable image from the Deployment
+Deployment `multi-arch-app` (namespace `default`) has two containers using different
+alpine images. One image bundles the vulnerable package `libcrypto3`.
+
+Use the `bom` tool to generate an SPDX document for each image, identify which image
+contains `libcrypto3`, and remove that container from the Deployment.
 
 ## Test AFTER fix
 ```bash

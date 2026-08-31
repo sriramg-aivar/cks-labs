@@ -17,11 +17,11 @@ kubectl -n secure describe pod | grep -A3 'Events'
 
 ## Task
 
-A Deployment `web-app` in namespace `secure` references a TLS secret named `web-tls`
-in its volumes, but the secret doesn't exist — pods are stuck in ContainerCreating.
+Deployment `web-app` in namespace `secure` is stuck in ContainerCreating because it
+mounts a TLS secret named `web-tls` that doesn't exist yet.
 
-Create the `web-tls` secret (type `kubernetes.io/tls`) using the cert/key files
-(`tls.crt` and `tls.key` in the current directory).
+Create the `web-tls` secret (of type TLS) in namespace `secure` using the certificate
+and key files (`tls.crt`, `tls.key`) in the current directory, so the pods start.
 
 ## Test AFTER fix
 ```bash

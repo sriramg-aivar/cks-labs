@@ -13,13 +13,13 @@ grep 'json_output' /opt/falco/falco.yaml
 
 ## Task
 
-1. Edit `/opt/falco/rules.d/custom-rules.yaml` — write a rule:
-   - **Rule name:** `Read sensitive file shadow`
-   - **Condition:** `open_read and fd.name = "/etc/shadow"`
-   - **Output:** `"%evt.time %user.name %proc.name %container.id"`
-   - **Priority:** `WARNING`
+Write a Falco rule and fix Falco config on the controlplane node:
 
-2. Edit `/opt/falco/falco.yaml` — set `json_output: true`
+1. In `/opt/falco/rules.d/custom-rules.yaml`, replace the placeholder with a rule named
+   `Read sensitive file shadow` that fires when any process reads `/etc/shadow`. The
+   alert output must include the timestamp, user, process name, and container ID, and the
+   rule priority must be WARNING.
+2. In `/opt/falco/falco.yaml`, enable JSON output.
 
 ## Test AFTER fix
 ```bash

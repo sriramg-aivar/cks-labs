@@ -17,16 +17,16 @@ cat /etc/kubernetes/audit-policy.yaml
 
 ## Task
 
-Edit `/etc/kubernetes/manifests/kube-apiserver.yaml` to enable audit logging:
+Enable API server audit logging by editing `/etc/kubernetes/manifests/kube-apiserver.yaml`:
 
-1. Add flags:
-   - `--audit-policy-file=/etc/kubernetes/audit-policy.yaml`
-   - `--audit-log-path=/var/log/kubernetes/audit/audit.log`
-   - `--audit-log-maxbackup=2`
+1. Point the API server at the audit policy file already present at
+   `/etc/kubernetes/audit-policy.yaml`.
+2. Write audit logs to `/var/log/kubernetes/audit/audit.log`.
+3. Keep at most 2 old (rotated) log files.
+4. Add the hostPath volumes and volumeMounts so the API server pod can read the policy
+   file and write to the log directory.
 
-2. Add hostPath volumes + volumeMounts:
-   - Policy file: mount `/etc/kubernetes/audit-policy.yaml` (readOnly, type: File)
-   - Log dir: mount `/var/log/kubernetes/audit` (type: DirectoryOrCreate)
+The API server is a static pod — saving the manifest restarts it automatically.
 
 ## Test AFTER fix
 ```bash

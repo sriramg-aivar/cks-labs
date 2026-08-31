@@ -13,13 +13,14 @@ cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep enable-admission-plugin
 
 ## Task
 
-1. Fix `/etc/kubernetes/imagepolicy/admission-config.yaml`:
-   - Change `defaultAllow: true` → `defaultAllow: false` (fail CLOSED)
+Configure the ImagePolicyWebhook admission controller on the API server:
 
-2. Edit `/etc/kubernetes/manifests/kube-apiserver.yaml`:
-   - Add `ImagePolicyWebhook` to `--enable-admission-plugins=NodeRestriction,ImagePolicyWebhook`
-   - Add `--admission-control-config-file=/etc/kubernetes/imagepolicy/admission-config.yaml`
-   - Add volume/volumeMount for `/etc/kubernetes/imagepolicy` if needed
+1. The admission config at `/etc/kubernetes/imagepolicy/admission-config.yaml` is currently
+   fail-open. Change it so that if the webhook backend is unreachable, image admission is
+   DENIED (fail closed).
+2. Edit `/etc/kubernetes/manifests/kube-apiserver.yaml` to enable the ImagePolicyWebhook
+   admission plugin and point it at the admission config file. Add the volume/volumeMount
+   for the config directory if needed.
 
 ## Test AFTER fix
 ```bash

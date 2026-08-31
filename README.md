@@ -1,6 +1,6 @@
 # 🔐 CKS Practice Labs
 
-Practice all **16 CKS exam scenarios** on a real **kubeadm cluster** (2 nodes: controlplane + worker).
+Practice all **17 CKS exam scenarios** on a real **kubeadm cluster** (2 nodes: controlplane + worker).
 
 Designed for **Killercoda** CKS playgrounds — or any kubeadm cluster with 2 nodes.
 
@@ -30,9 +30,9 @@ cd cluster && ./create-cluster.sh && cd ..
 ║            CKS Practice Labs - Study Mode                     ║
 ╚═══════════════════════════════════════════════════════════════╝
 
-  Progress: 0/16 completed
+  Progress: 0/17 completed
 
-  ▶ Scenario 01/16: Kubelet & etcd Security
+  ▶ Scenario 01/17: Kubelet & etcd Security
 
   Options:
     [r] Run/Setup this scenario
@@ -58,7 +58,7 @@ Progress is saved. Quit with `[q]` (asks to save or reset progress).
 
 ---
 
-## All 16 Scenarios
+## All 17 Scenarios
 
 | # | Topic | What you do |
 |---|-------|-------------|
@@ -78,6 +78,7 @@ Progress is saved. Quit with `[q]` (asks to save or reset progress).
 | 14 | Cilium Network Policy | Write CiliumNetworkPolicy |
 | 15 | ImagePolicyWebhook | Configure admission (fail closed) |
 | 16 | API Server Auth | Fix anonymous-auth + authorization-mode |
+| 17 | Istio Injection & mTLS | Enable sidecar injection + STRICT PeerAuthentication |
 
 ---
 

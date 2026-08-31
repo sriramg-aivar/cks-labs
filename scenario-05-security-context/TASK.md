@@ -9,15 +9,13 @@ kubectl get deployment immutable-app -o jsonpath='{.spec.template.spec.container
 
 ## Task
 
-Edit Deployment `immutable-app` (namespace `default`) container securityContext:
-```yaml
-securityContext:
-  runAsUser: 30000
-  readOnlyRootFilesystem: true
-  allowPrivilegeEscalation: false
-```
+Edit Deployment `immutable-app` (namespace `default`) so its container securityContext
+enforces immutability:
+- runs as UID `30000`
+- read-only root filesystem
+- privilege escalation not allowed
 
-Use: `kubectl edit deployment immutable-app`
+Use `kubectl edit deployment immutable-app`.
 
 ## Test AFTER fix
 ```bash

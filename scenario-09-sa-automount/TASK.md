@@ -17,16 +17,14 @@ kubectl get deployment token-app -o yaml | grep projected
 
 ## Task
 
-1. Patch ServiceAccount `restricted-sa`:
-   - Set `automountServiceAccountToken: false`
+Harden ServiceAccount token mounting in namespace `default`:
 
-2. Edit Deployment `token-app`:
-   - Set `automountServiceAccountToken: false` in pod spec
-   - Add a **projected volume** to manually mount the token:
-     - serviceAccountToken (path: token, expirationSeconds: 3607)
-     - configMap `kube-root-ca.crt` (key: ca.crt, path: ca.crt)
-     - downwardAPI (path: namespace, fieldRef: metadata.namespace)
-   - Mount it read-only at `/var/run/secrets/kubernetes.io/serviceaccount`
+1. Disable automatic token mounting on ServiceAccount `restricted-sa`.
+2. Edit Deployment `token-app` so it does NOT auto-mount the token, but instead mounts
+   the API credentials manually via a read-only projected volume (token + CA cert +
+   namespace) at the standard serviceaccount mount path.
+
+The token must still be present inside the pod — just mounted explicitly, not automatically.
 
 ## Test AFTER fix
 ```bash

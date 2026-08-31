@@ -14,15 +14,14 @@ cat /opt/docker/fix-permissions.sh
 
 ## Task
 
-Fix `/opt/docker/daemon.json`:
-1. `"icc": false`
-2. `"userns-remap": "default"`
-3. `"no-new-privileges": true`
-4. `"live-restore": true`
+Harden the container runtime daemon config at `/opt/docker/daemon.json`:
+1. Disable inter-container communication (icc).
+2. Enable user-namespace remapping (default).
+3. Prevent processes from gaining new privileges.
+4. Enable live-restore.
 
-Fix `/opt/docker/fix-permissions.sh` — add commands to:
-- `chown root:root /var/run/docker.sock`
-- `chmod 660 /var/run/docker.sock`
+Then fill in `/opt/docker/fix-permissions.sh` with the commands to set the docker socket
+ownership to root:root and its permissions to 660.
 
 ## Test AFTER fix
 ```bash
