@@ -1,6 +1,6 @@
 # Solution: Scenario 4
 
-## Custom rule (`/opt/falco/rules.d/custom-rules.yaml`)
+## Custom rule (`/etc/falco/rules.d/custom-rules.yaml`)
 ```yaml
 - rule: Read sensitive file shadow
   desc: Detect any process reading /etc/shadow
@@ -10,7 +10,7 @@
   tags: [filesystem, mitre_credential_access]
 ```
 
-## Enable JSON output (`/opt/falco/falco.yaml`)
+## Enable JSON output (`/etc/falco/falco.yaml`)
 Change:
 ```yaml
 json_output: true
@@ -18,11 +18,17 @@ json_output: true
 
 ## Verify
 ```bash
-grep 'Read sensitive file shadow' /opt/falco/rules.d/custom-rules.yaml
-grep 'open_read' /opt/falco/rules.d/custom-rules.yaml
-grep '/etc/shadow' /opt/falco/rules.d/custom-rules.yaml
-grep 'WARNING' /opt/falco/rules.d/custom-rules.yaml
-grep 'json_output: true' /opt/falco/falco.yaml
+# Validate the ruleset with Falco itself
+falco -V /etc/falco/rules.d/custom-rules.yaml
+
+grep 'Read sensitive file shadow' /etc/falco/rules.d/custom-rules.yaml
+grep 'open_read' /etc/falco/rules.d/custom-rules.yaml
+grep '/etc/shadow' /etc/falco/rules.d/custom-rules.yaml
+grep 'WARNING' /etc/falco/rules.d/custom-rules.yaml
+grep 'json_output: true' /etc/falco/falco.yaml
+
+# (optional) load rules and dry-run Falco
+falco -U 2>&1 | head
 ```
 
 ## Exam tips
@@ -31,3 +37,5 @@ grep 'json_output: true' /opt/falco/falco.yaml
 - Priority levels: EMERGENCY, ALERT, CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG
 - Rules in `/etc/falco/rules.d/` override/extend the default ruleset
 - `json_output: true` makes output machine-parseable
+- `falco -V <file>` validates a rules file; `falco -L` lists loaded rules; `falco -U` runs with updated rules
+- Note: `/opt/falco` paths are used only if Falco couldn't be installed (fallback)

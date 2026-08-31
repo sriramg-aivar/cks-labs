@@ -4,8 +4,18 @@ echo "Checking Falco configuration..."
 
 FAILED=0
 
-# Check rules file
-RULES=$(cat /opt/falco/rules.d/custom-rules.yaml 2>/dev/null || echo "")
+# Detect which config path is in use
+if [ -f /etc/falco/rules.d/custom-rules.yaml ]; then
+  RULES_FILE="/etc/falco/rules.d/custom-rules.yaml"
+  CONFIG_FILE="/etc/falco/falco.yaml"
+else
+  RULES_FILE="/opt/falco/rules.d/custom-rules.yaml"
+  CONFIG_FILE="/opt/falco/falco.yaml"
+fi
+
+RULES=$(cat "$RULES_FILE" 2>/dev/null || echo "")
+CONFIG=$(cat "$CONFIG_FILE" 2>/dev/null || echo "")
+
 if echo "$RULES" | grep -q 'Read sensitive file shadow'; then
   echo "✓ Rule name correct"
 else
@@ -34,13 +44,20 @@ else
   FAILED=1
 fi
 
-# Check falco.yaml
-CONFIG=$(cat /opt/falco/falco.yaml 2>/dev/null || echo "")
 if echo "$CONFIG" | grep -q 'json_output: true'; then
   echo "✓ JSON output enabled"
 else
-  echo "✗ json_output should be true in falco.yaml"
+  echo "✗ json_output should be true in $CONFIG_FILE"
   FAILED=1
+fi
+
+# Bonus: if falco is installed, validate the rules file syntax
+if command -v falco &>/dev/null; then
+  if falco -V "$RULES_FILE" >/dev/null 2>&1; then
+    echo "✓ falco -V validates the rules file (valid syntax)"
+  else
+    echo "⚠ falco -V reports the rules file has syntax issues (run: falco -V $RULES_FILE)"
+  fi
 fi
 
 if [ $FAILED -eq 0 ]; then
