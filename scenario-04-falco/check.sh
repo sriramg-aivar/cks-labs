@@ -51,12 +51,15 @@ else
   FAILED=1
 fi
 
-# Bonus: if falco is installed, validate the rules file syntax
+# Bonus: if falco is installed, validate the rules file syntax.
+# Must load the base rules file too (custom rule uses macros like open_read defined there).
 if command -v falco &>/dev/null; then
-  if falco -V "$RULES_FILE" >/dev/null 2>&1; then
-    echo "✓ falco -V validates the rules file (valid syntax)"
+  BASE_RULES="/etc/falco/falco_rules.yaml"
+  [ -f "$BASE_RULES" ] || BASE_RULES=""
+  if falco -V "${BASE_RULES:-$RULES_FILE}" ${BASE_RULES:+-V "$RULES_FILE"} >/dev/null 2>&1; then
+    echo "✓ falco -V validates the ruleset (valid syntax)"
   else
-    echo "⚠ falco -V reports the rules file has syntax issues (run: falco -V $RULES_FILE)"
+    echo "⚠ falco -V reports issues — run: falco -V $BASE_RULES -V $RULES_FILE"
   fi
 fi
 

@@ -30,9 +30,15 @@ Write a Falco rule and fix the Falco config:
 
 ## Test AFTER fix
 ```bash
-# Validate your ruleset syntax with Falco itself
-falco -V /etc/falco/rules.d/custom-rules.yaml
-# Should say: Ok / validation successful
+# Validate your ruleset syntax with Falco.
+# IMPORTANT: load the BASE rules file too, because your rule uses macros
+# like `open_read` that are DEFINED in the default ruleset.
+falco -V /etc/falco/falco_rules.yaml -V /etc/falco/rules.d/custom-rules.yaml
+# Should say: Ok / rules loaded successfully
+
+# Confirm your rule was actually loaded (list rules)
+falco -L 2>/dev/null | grep 'Read sensitive file shadow'
+# Should print your rule name
 
 # Rule should have correct name + condition + priority
 grep 'Read sensitive file shadow' /etc/falco/rules.d/custom-rules.yaml
@@ -42,7 +48,19 @@ grep 'WARNING' /etc/falco/rules.d/custom-rules.yaml
 
 # JSON output enabled
 grep 'json_output: true' /etc/falco/falco.yaml
-
-# (optional) dry-run Falco to load rules and confirm no errors
-falco -U 2>&1 | head -20
 ```
+
+### Note on `falco -U`
+`falco -U` **runs the engine** and only prints an alert **when the rule fires** — i.e.
+when a process actually reads `/etc/shadow`. It does NOT list your rules, so
+`falco -U | grep 'Read sensitive file shadow'` shows nothing unless the rule triggers.
+
+To see it fire live: run Falco in one terminal, then trigger it in another:
+```bash
+# Terminal 1
+falco
+# Terminal 2 — trigger the rule
+cat /etc/shadow
+# Terminal 1 should now print a WARNING alert with your rule name
+```
+Use `falco -L` to LIST loaded rules, and `falco -V ...` to VALIDATE syntax.
