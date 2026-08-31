@@ -36,6 +36,9 @@ SCENARIOS=(
   "scenario-15-imagepolicywebhook"
   "scenario-16-apiserver-auth"
   "scenario-17-istio"
+  "scenario-18-rbac"
+  "scenario-19-kube-bench"
+  "scenario-20-trivy"
 )
 
 SCENARIO_TITLES=(
@@ -56,6 +59,9 @@ SCENARIO_TITLES=(
   "ImagePolicyWebhook"
   "API Server Auth"
   "Istio Injection & mTLS"
+  "RBAC Least Privilege"
+  "kube-bench CIS Benchmark"
+  "Trivy Image Scanning"
 )
 
 CURRENT=0
