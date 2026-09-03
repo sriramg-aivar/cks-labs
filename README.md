@@ -8,18 +8,19 @@ Designed for **Killercoda** CKS playgrounds — or any kubeadm cluster with 2 no
 
 ## Quick Start (Killercoda)
 
+Open a Killercoda CKS/Kubernetes playground (2 nodes), then on the **controlplane** node
+just copy-paste and run these commands:
+
 ```bash
-# 1. Open a Killercoda CKS/Kubernetes playground (2 nodes)
-# 2. Clone this repo on the controlplane node:
-git clone <this-repo>
+git clone https://github.com/sriramg-aivar/cks-labs.git
 cd cks-labs
-
-# 3. One-time setup (verifies cluster, installs Cilium CRDs):
-cd cluster && ./create-cluster.sh && cd ..
-
-# 4. Start studying:
+cd cluster
+./create-cluster.sh
+cd ..
 ./cks.sh
 ```
+
+That's it — the interactive study menu opens and you can start from Scenario 01.
 
 ---
 
