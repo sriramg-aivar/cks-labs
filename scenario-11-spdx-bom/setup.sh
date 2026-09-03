@@ -6,20 +6,18 @@ if ! command -v bom &>/dev/null; then
   echo "Installing bom (SPDX SBOM tool)..."
   ARCH=$(uname -m)
   case "$ARCH" in
-    x86_64) BOM_ARCH="amd64" ;;
     aarch64|arm64) BOM_ARCH="arm64" ;;
-    *) BOM_ARCH="amd64" ;;
+    *)             BOM_ARCH="amd64" ;;
   esac
-  # Resolve the latest release tag dynamically (falls back to a known-good version)
-  BOM_VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/bom/releases/latest \
-    | grep -m1 '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
-  [ -z "$BOM_VERSION" ] && BOM_VERSION="v0.7.1"
-  # Correct asset name format is: bom-<arch>-linux
-  if curl -sSfL "https://github.com/kubernetes-sigs/bom/releases/download/${BOM_VERSION}/bom-${BOM_ARCH}-linux" -o /usr/local/bin/bom; then
+  # Use the 'latest/download' redirect — no GitHub API call, no version parsing.
+  # (|| true so a transient failure never kills the whole setup under 'set -e')
+  if curl -sSfL "https://github.com/kubernetes-sigs/bom/releases/latest/download/bom-${BOM_ARCH}-linux" -o /usr/local/bin/bom; then
     chmod +x /usr/local/bin/bom
-    echo "✓ bom ${BOM_VERSION} installed"
+    echo "✓ bom installed ($(/usr/local/bin/bom version 2>/dev/null | head -1 || echo ok))"
   else
-    echo "⚠ bom download failed — check network. URL tried: bom-${BOM_ARCH}-linux (${BOM_VERSION})"
+    echo "⚠ bom download failed. Install manually:"
+    echo "    curl -LO https://github.com/kubernetes-sigs/bom/releases/latest/download/bom-amd64-linux"
+    echo "    chmod +x bom-amd64-linux && sudo mv bom-amd64-linux /usr/local/bin/bom"
   fi
 else
   echo "✓ bom already installed"

@@ -4,30 +4,17 @@ set -euo pipefail
 # ─── Auto-install trivy if not present ─────────────────────────────
 if ! command -v trivy &>/dev/null; then
   echo "Installing trivy..."
-  ARCH=$(uname -m)
-  case "$ARCH" in
-    x86_64)        TRIVY_ARCH="Linux-64bit" ;;
-    aarch64|arm64) TRIVY_ARCH="Linux-ARM64" ;;
-    *)             TRIVY_ARCH="Linux-64bit" ;;
-  esac
-  # Resolve latest version dynamically (fallback to known-good)
-  TRIVY_VERSION=$(curl -sL https://api.github.com/repos/aquasecurity/trivy/releases/latest \
-    | grep -m1 '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/')
-  [ -z "$TRIVY_VERSION" ] && TRIVY_VERSION="0.55.0"
+  # Official install script auto-detects the latest version + arch (no GitHub API call).
+  # || true so a transient hiccup never kills the whole setup under 'set -e'.
+  curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+    | sh -s -- -b /usr/local/bin 2>/dev/null || true
 
-  TMP=$(mktemp -d)
-  TARBALL="trivy_${TRIVY_VERSION}_${TRIVY_ARCH}.tar.gz"
-  if curl -sSfL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/${TARBALL}" -o "$TMP/trivy.tar.gz"; then
-    tar xzf "$TMP/trivy.tar.gz" -C "$TMP"
-    mv "$TMP/trivy" /usr/local/bin/trivy
-    chmod +x /usr/local/bin/trivy
-    echo "✓ trivy ${TRIVY_VERSION} installed"
+  if command -v trivy &>/dev/null; then
+    echo "✓ trivy installed ($(trivy --version 2>/dev/null | head -1))"
   else
-    echo "⚠ Direct download failed, trying official install script..."
-    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin || \
-      echo "⚠ trivy install failed — check network connectivity."
+    echo "⚠ trivy install failed. Install manually:"
+    echo "    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin"
   fi
-  rm -rf "$TMP"
 else
   echo "✓ trivy already installed"
 fi
